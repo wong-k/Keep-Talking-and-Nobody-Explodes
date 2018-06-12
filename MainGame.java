@@ -4,7 +4,7 @@
  * On select level screen, user can click through 10 JPanels and click play to start a game.
  * When the bomb explodes after 10 seconds (the puzzles don't work right now), a game over frame is shown.
  * From game over frame, user can return to main menu or play again.
- * Keith Wong
+ * Keith Wong	added comment to test if github is working
  */
 import javax.swing.*;
 import java.io.*;
