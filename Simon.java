@@ -1,7 +1,9 @@
+import java.awt.event.ActionListener;
 import java.util.*;
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.Timer;
-public class Simon{
+public class Simon implements ActionListener {
     private Timer myTimer;
     private Rectangle simon;
     private Polygon[]colours;
@@ -9,9 +11,10 @@ public class Simon{
     private boolean defused;
     private Random colour=new Random();
     private ArrayList<Integer>pattern=new ArrayList<Integer>();//This is the pattern of 0,1,2,3 that determines which if the colours needs to be clicked
-    private int complexity,clicks,time;//Complexity is the total amount of times the colour will flash, Clicks keeps up to date with how many times the user has clicked colours to keep up with the pattern
+    private int complexity,clicks,time,tickcount;//Complexity is the total amount of times the colour will flash, Clicks keeps up to date with how many times the user has clicked colours to keep up with the pattern
     private int[]invert; //This makes the inverted effect that the reader of the manual has to tell the person to click (So maybe 1 or like red has to actually be 3 AKA green)
     public Simon(int complexity,Rectangle mod,int[]inverts){
+        Timer myTimer=new Timer(50,this);
         time=15*complexity;
         this.complexity=complexity;
         simon=mod;
@@ -67,12 +70,10 @@ public class Simon{
         g.fillPolygon(colours[3]);
     }
     private void pattern(Graphics g){
-        Timer myTimer=new Timer(50,null);
         myTimer.start();
         for(int i:pattern){
-            int tickcount=100;
+            tickcount=100;
             while(true){
-                tickcount-=10;
                 if(tickcount==0){
                     tickcount=100;
                     break;
@@ -81,11 +82,16 @@ public class Simon{
             while(true){
                 g.setColor(painting[pattern.get(i)]);
                 g.fillPolygon(colours[pattern.get(i)]);
-                tickcount-=10;
                 if(tickcount==0){
+                    myTimer.stop();
                     break;
                 }
             }
+        }
+    }
+    public void actionPerformed(ActionEvent e){
+        if(tickcount>0){
+            tickcount-=10;
         }
     }
 }
