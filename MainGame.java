@@ -1,29 +1,36 @@
 /*
- * MainGame.java
- * Upon running, a main menu is displayed. Users can access an instructions JFrame, or select level screen.
- * On select level screen, user can click through 10 JPanels and click play to start a game.
- * When the bomb explodes after 10 seconds (the puzzles don't work right now), a game over frame is shown.
- * From game over frame, user can return to main menu or play again.
- * Keith Wong
+ MainGame.java
+ The goal of this 2-player game is to defuse a bomb by solving numerous puzzles within a time limit.
+ Upon running, a main menu frame is displayed. From here, player can access html manual or a select level page.
+ From the select level page, the user can click play, which brings user to the game frame.
+ A 3 x 2 grid which represents the bomb is shown on screen, and the user must complete all puzzles before time runs out.
+ After the game ends, the user can play again or go play the rest of the levels.
+ Once the player has completed all 10 levels, they unlock a customizable level where they create their own bomb.
+ Keith Wong, Erik Yzeiri
  */
 import javax.swing.*;
 import java.io.*;
 import java.applet.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.*;
+import javax.sound.sampled.*;
 import java.net.MalformedURLException;
 import java.util.*;
-import javax.swing.Timer;		//import Timer specifically to avoid conflict with util Timer
+import javax.swing.Timer;		                    //import Timer specifically to avoid conflict with util Timer
+/*------------------------------------------------------------------------------------------------------------------
+This class contains the main method and makes a main menu upon running the program.
+From this frame, player can access html bomb defusal manual, or a select level page.
+Implements ActionListener to detect when buttons are clicked, MouseListener to detect when mouse hovers over a button.
+--------------------------------------------------------------------------------------------------------------------*/
 public class MainGame extends JFrame implements ActionListener,MouseListener {
     private JButton playBut,infoBut;				//buttons that bring user to level selection and instruction pages
     private Bomb[] allBombs;                        //contains 10 randomly generated bombs for the game
-    private SelectLevelPage selectLevel;
+    private SelectLevelPage selectLevel;            //the select level page that's displayed once player clicks "Select level"
     private AudioClip sound;                        //enables sound effects for the buttons
-    /*---------------------------------------------------------------------------------------------------------------------------
-    Constructor which makes the main menu
-    Rather than having to create a new SelectLevelPage whenever user clicks "Play", a SelectLevelPage is passed in as an argument
-     ----------------------------------------------------------------------------------------------------------------------------*/
+    /*-------------------------------------------------------------------------------------------------------------------------
+    Constructor which makes the main menu by creating the frame, adding images, and adding buttons.
+    Rather than having to create a new SelectLevelPage whenever user clicks play, a SelectLevelPage is passed in as an argument
+     -------------------------------------------------------------------------------------------------------------------------*/
     public MainGame(SelectLevelPage selectPage) {
         super("Main Menu");
         setSize(800,600);
@@ -32,20 +39,14 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         allBombs=new Bomb[10];
         selectLevel=selectPage;
 
-        ImageIcon background=new ImageIcon("images/main menu back.png");		//adding a background image to main menu
+        ImageIcon background=new ImageIcon("images/main menu back.png");	//adding a background image to main menu
         JLabel menuBack=new JLabel(background);
-        JLayeredPane mainPage=new JLayeredPane();
+        JLayeredPane mainPage=new JLayeredPane();                                  //layered pane to which the background image and buttons are added
         mainPage.setLayout(null);
         menuBack.setSize(800,600);
         menuBack.setLocation(0,0);
 
-        /*JLabel scoreLabel=new JLabel("Final Score: 01:30");			//displays final score
-        scoreLabel.setSize(500,200);
-        scoreLabel.setFont(new Font("Special Elite",Font.BOLD,40));
-        scoreLabel.setForeground(Color.WHITE);
-        scoreLabel.setLocation(400,0);*/
-
-        playBut=new JButton("Bombs");                                        //making a play button that changes colour when hovering over it
+        playBut=new JButton("Bombs");                                         //making a play button that changes colour when hovering over it
         playBut.addActionListener(this);
         playBut.addMouseListener(this);
         playBut.setFont(new Font("Special Elite",Font.BOLD,50));
@@ -67,12 +68,11 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         infoBut.setFocusPainted(false);
         infoBut.setBorderPainted(false);
 
-        mainPage.add(menuBack,JLayeredPane.DEFAULT_LAYER);
-        //mainPage.add(scoreLabel,JLayeredPane.DRAG_LAYER);
+        mainPage.add(menuBack,JLayeredPane.DEFAULT_LAYER);                      //adding buttons and background image
         mainPage.add(playBut,JLayeredPane.DRAG_LAYER);
         mainPage.add(infoBut,JLayeredPane.DRAG_LAYER);
         add(mainPage);
-        try{                                                                    //loading the audio file
+        try{                                                                    //loading the audio file for button sound effects
             File soundFile=new File("button click.wav");
             sound=Applet.newAudioClip(soundFile.toURL());
         }
@@ -132,40 +132,40 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
     public void mouseReleased(MouseEvent e){}
     public void mousePressed(MouseEvent e){}
 
-    public static void main(String[]args){                  //create random array of integers 1 to 4
-        Bomb[] allBombs=new Bomb[10];
+    public static void main(String[]args){
+        Bomb[] allBombs=new Bomb[10];                       //the bombs are only made once, so they are created in main method
         /*Random rand=new Random();
         for(int i=0;i<10;i++){                              //making 10 bombs with random modules
             int[] randomModules=new int[i+1];               //the number of modules equals the level of the bomb (1 to 10)
-            for(int j=0;j<i+1;j++){                         //Adding random numbers from 1-4 to randomModules[]. These numbers are interpreted as constants in Modules class
+            for(int j=0;j<i+1;j++){                         //Adding random numbers from 1-4 to randomModules[]. These numbers are interpreted as constants in Modules class and are transformed into appropriate modules.
                 int module=rand.nextInt(4)+1;
                 randomModules[j]=module;
             }                                               //generate serial codes and battery numbers
             allBombs[i]=new Bomb("",0,randomModules);
         }*/
-        int[] moduleTypes=new int[1];
+        int[] moduleTypes=new int[1];                                                   //remove this code once all modules are implelemented
         Modules wireTest=new Modules(2,100,100);
         moduleTypes[0]=wireTest.getType();
-        allBombs[0]=new Bomb("",0,moduleTypes);
+        allBombs[0]=new Bomb("",0,moduleTypes);                           //remove up until here
         SelectLevelPage selectPage=new SelectLevelPage(0,allBombs);
         new MainGame(selectPage);
     }
 }
-/*---------------------------------------------------------------------------------------
- This class creates the frame where players select a level to play
- The frame uses cardLayout, where each panel is a BookPage Object that represents a level.
- *This class is called in the main class, when user clicks the "Select Level" button.
- *--------------------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------------------------
+ This class creates the frame where players select a level to play.
+ The frame uses cardLayout, where each panel is a BookPage Object that displays information about a level.
+ Since the select level page has many fields and processes in its construction, it's only created once in the main method.
+ *----------------------------------------------------------------------------------------------------------------------*/
 class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
-    private JPanel completeBook;							//JPanel that stores all the other panels
+    private JPanel completeBook;							//JPanel that stores all the other panels in cardLayout
     private CardLayout cLayout;
     private BookPage[] pages;								//The Objects that represent the pages of the book. The Array is used to update the displayed panel when a button is clicked
     private BookPage currentPage;							//The current page being shown. This is used to update the panel's interface.
-    private Timer myTimer;
-    private JButton returnBut,playBut;						//A button that brings user back to main menu. This is a field because it has its own if statement in actionPerformed()
+    private Timer myTimer;                                  //fires every 10 milliseconds and causes the interface to update
+    private JButton returnBut,playBut;						//buttons that bring user to main menu and start the game
     private JButton[] levelBut;								//Array that stores the next/previous buttons to flip between pages
     private int level;
-    private Bomb[] allBombs;
+    private Bomb[] allBombs;                                //the Array of 10 bombs. Each bomb is assigned to a BookPage Object so it belongs to that level.
     private AudioClip pageSound,buttonSound;
     /*-----------------------------------------------------------------------------------------
      Constructor which makes the card layout, buttons, and BookPage Objects
@@ -234,9 +234,9 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         showPage(displayedLevel);                                   //displaying the level indicated by displayedLevel
         getContentPane().add(completeBook);
     }
-    /*--------------------------------------------------------------------------------------------------------
-    This method unlocks a level to play, called whenever user completes a level and returns to SelectLevelPage
-     ---------------------------------------------------------------------------------------------------------*/
+    /*-----------------------------------------------------------------------------------------
+    This method unlocks a level to play, called whenever user wins a level by defusing the bomb
+     ------------------------------------------------------------------------------------------*/
     public void unlockLevel(int pageIndex){
         pages[pageIndex].unlock();
     }
@@ -431,31 +431,33 @@ class BookPage extends JPanel{
         }
     }
     /*----------------------------------------------------------------------------------------------------------------------------
-     *This method is used to display information about the bomb for a level: time required to complete, modules, current best time
-     *Since bombs are randomly created every time the program is run, we need a general method of displaying information,
-     *rather than blitting a picture that contains information about the bomb on each page of the book.
+     This method is used to display information about the bomb for a level: time required to complete, modules, current best time
+     Since bombs are randomly created every time the program is run, we need a general method of displaying information,
+     rather than blitting a picture that contains information about the bomb on each page of the book.
      *---------------------------------------------------------------------------------------------------------------------------*/
     @Override
-    public void paintComponent(Graphics g){
-        g.drawImage(back,0,0,this);
-        g.setColor(new Color(255,247,152));
-        g.fillRect(150,0,500,getHeight());
+    public void paintComponent(Graphics g) {
+        g.drawImage(back, 0, 0, this);
+        g.setColor(new Color(255, 247, 152));
+        g.fillRect(150, 0, 500, getHeight());
 
-        g.setColor(new Color(0,0,0));
-        for(int y=90;y<550;y+=70){
-            g.drawLine(150,y,650,y);
+        g.setColor(new Color(0, 0, 0));
+        for (int y = 90; y < 550; y += 70) {
+            g.drawLine(150, y, 650, y);
         }
-        g.drawLine(400,510,400,510);
-        g.setFont(new Font("Special Elite",Font.BOLD,50));
-        g.drawString("Level "+pageNum,300,70);                   //displaying level number
+        g.drawLine(400, 510, 400, 510);
+        g.setFont(new Font("Special Elite", Font.BOLD, 50));
+        g.drawString("Level " + pageNum, 300, 70);                   //displaying level number
 
-        g.setFont(new Font("Special Elite",Font.PLAIN,35));
-        g.drawString("Wires: 10",310,140);              //replace "10" with +numWires and so on
-        g.drawString("Simon says: 10",280,210);
-        g.drawString("Buttons: 10",300,280);
-        g.drawString("Symbols: 10",300,350);
-        g.drawString("Status: "+locked,260,420);
-        g.drawString("Best score: 02:30",250,490);
+        g.setFont(new Font("Special Elite", Font.PLAIN, 35));
+        g.drawString("Wires: 10", 310, 140);              //replace "10" with +numWires and so on
+        g.drawString("Simon says: 10", 280, 210);
+        g.drawString("Buttons: 10", 300, 280);
+        g.drawString("Symbols: 10", 300, 350);
+        g.drawString("Status: " + locked, 260, 420);
+        if (bomb != null) {
+            g.drawString("Best score: " + bomb.getHighScore(), 250, 490);
+        }
     }
 }
 /*----------------------------------------------------------------
@@ -467,7 +469,7 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
     private Bomb bomb;
     private SelectLevelPage selectLevel;
     private JButton flipBut;                    //controls which side of the Bomb is displayed
-
+    private Clip bgMusic;                  //background music
     /*--------------------------------------------------------------
     Constructor which makes the frame
     "thisBomb" is the Bomb that belongs to the level being played
@@ -500,12 +502,30 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         thisFrame.add(bomb,JLayeredPane.DEFAULT_LAYER);
         thisFrame.add(flipBut,JLayeredPane.DRAG_LAYER);
         add(thisFrame);
+        try{													//instructions for implementing music were found at: https://www.ntu.edu.sg/home/ehchua/programming/java/J8c_PlayingSound.html
+            File musicFile=new File("background music.aiff");		//reading the music file
+            AudioInputStream audioInput=AudioSystem.getAudioInputStream(musicFile);
+            bgMusic=AudioSystem.getClip();							//using Clip's methods, music can be started and stopped
+            bgMusic.open(audioInput);
+        }
+        catch(IOException ex){
+            System.out.println("Can't find music file.");
+        }
+        catch(UnsupportedAudioFileException ex){
+            System.out.println("Change the file type.");
+        }
+        catch(LineUnavailableException ex){
+            System.out.println("Line unavailable.");
+        }
         setVisible(true);
     }
     /*-----------------------------------------------------------------
-    This method starts the Timer, which enables the game to be updated
+    This method starts the Timer, which enables the game to be updated.
+    It also starts the background music and loops it infinitely.
      ----------------------------------------------------------------*/
     public void start(){
+        bgMusic.start();
+        bgMusic.loop(Clip.LOOP_CONTINUOUSLY);
         myTimer.start();
     }
     /*------------------------------------------------------------------------------------------
@@ -517,12 +537,22 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             bomb.updateState();
             bomb.repaint();
         }
-        if(source==flipBut){                                   //this makes the bomb show either the front or back side
+        if(source==flipBut){                                                        //this makes the bomb show either the front or back side
             bomb.changeFace();
         }
-        if(bomb.getTime()==0 || bomb.getStrikes()==3){         //game ends if time runs out or player makes 3 mistakes
+        if(bomb.getTime()==0 || bomb.getStrikes()==3 || bomb.isDefused()){          //game ends if time runs out, player makes 3 mistakes, or player completes the level
             myTimer.stop();
-            new GameOverFrame(bomb,levelIndex,selectLevel);
+            bgMusic.stop();
+            setVisible(false);
+            if(bomb.isDefused()){
+                selectLevel.unlockLevel(Math.min(levelIndex+1,10));                 //Unlocking the next level for the player. This will still get called when user completes custom level,
+                                                                                    //but since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
+                new GameOverFrame(bomb,levelIndex,selectLevel,bomb.getScore());
+            }
+            else{                                                                   //the player failed the level
+                new GameOverFrame(bomb,levelIndex,selectLevel,"You died");
+            }
+            bomb.reset();                                                           //this enables the bomb to be played again
         }
     }
     /*-------------------------------------------------------------------
@@ -565,7 +595,9 @@ class Bomb extends JPanel implements MouseListener{
     private Modules currentInteract;        //the module that is being interacted with right now
     private int[] allModules;
     private Image back,strikePic;
-    private TimeModule timer;
+    private TimeModule timer;               //displays the time left to defuse the bomb
+    private boolean defused;
+    private int bestTime;                   //the lowest time it took the player to complete the level
     /*-----------------------------------------------------------------------------------------------------
     This is the constructor of the bomb
     "serial" is a serial code, "bat" is number of batteries
@@ -576,6 +608,8 @@ class Bomb extends JPanel implements MouseListener{
         allModules=modTypes;
         serial=serialCode;
         numBat=bat;
+        defused=false;
+        bestTime=0;
         numMod=modTypes.length;
         back=new ImageIcon("images/game back.png").getImage();
         strikePic=new ImageIcon("images/strike.png").getImage();
@@ -583,25 +617,23 @@ class Bomb extends JPanel implements MouseListener{
         int[][] cornerCoord={{100,100},{100,300},{300,100},{500,100},{500,300}};          //each module box is drawn as a rectangle, so these are the rectangles' coordinates
 
         if(numMod>5){                                           //If there are more than 5 modules including the countdown
-            minigames=new Modules[6][2];                        //Each element has two spots: the first one contains a module on the front of the bomb, the second one is for the back
+            minigames=new Modules[5][2];                        //Each element has two spots: the first one contains a module on the front of the bomb, the second one is for the back
         }
         else {
-            minigames = new Modules[6][1];
+            minigames = new Modules[modTypes.length][1];
         }
         for(int i=0;i<numMod;i++) {                             //assigning modules to the new 2D Array
             if (i<=5) {
                 minigames[i][0] = new Modules(modTypes[i],cornerCoord[i][0],cornerCoord[i][1]);
             }
             else {                                              //the front of the bomb only has room for 5 modules, so we go back and start adding modules to the back
-                minigames[i - 5][1] = new Modules(modTypes[i],cornerCoord[i-5][0],cornerCoord[i-5][1]);
+                minigames[i - 6][1] = new Modules(modTypes[i],cornerCoord[i-6][0],cornerCoord[i-6][1]);
             }
         }
         int totalTime=1000;                                         //creating a timer
         for(Modules[] mod:minigames){                               //Each module has a designated time to solve it. This method goes through all the modules and gets those time values
-            if(mod[0]!=null){
-                totalTime+=mod[0].getAllottedTime();
-            }
-            if(mod.length==2){
+            totalTime+=mod[0].getAllottedTime();
+            if(mod.length==2 && mod[1]!=null){
                 totalTime+=mod[1].getAllottedTime();
             }
         }
@@ -613,26 +645,48 @@ class Bomb extends JPanel implements MouseListener{
     public int getTime(){
         return timer.getTime();
     }
+    /*-------------------------------------------------------------------------------------------------
+    This method takes in a time value in milliseconds and turns it into a String in the format, "00:30"
+     -------------------------------------------------------------------------------------------------*/
+    public String convertTime(int timeVal){
+        int min=timeVal/60000;                       //formatting the output
+        int seconds=(timeVal-(min*60000))/1000;
+        String output=String.format("%2d:%2d",(int)min,seconds).replace(" ","0");
+        return output;
+    }
+    /*------------------------------------------------------------------------------------------------------------------------------
+    This method returns how much time it took the player to finish the level and makes this the player's best score if it's a record.
+    Returns a String in the format of, 00:30
+    Called by GameFrame once it has been verified that player completed the level.
+    -------------------------------------------------------------------------------------------------------------------------------*/
+    public String getScore(){
+        int completionTime=timer.getCompletionTime();       //returns a time value in milliseconds
+        if(bestTime==0){
+            bestTime=completionTime;
+        }
+        else {
+            bestTime = Math.min(bestTime, completionTime);         //the lowest time value is wanted
+        }
+        return convertTime(completionTime);
+    }
+    /*--------------------------------------------------------------------
+    This method returns the best score for this level in a String format.
+    It's called by BookPage when displaying information about a Bomb.
+     ---------------------------------------------------------------------*/
+    public String getHighScore(){
+        return convertTime(bestTime);
+    }
     /*----------------------------------------------------------------------------------
     This method returns the Array of Integer constants that represent the Bomb's modules
      ----------------------------------------------------------------------------------*/
     public int[] getModules(){
         return allModules;
     }
-    /*--------------------------------------------------------
-    This method resets a bomb, enabling it to be played again.
-     --------------------------------------------------------*/
-    public void reset(){
-        strikes=face=0;                                     //front face shown by default
-        timer.reset();
-        for(Modules[] modList:minigames){                   //telling all the modules to reset themselves
-            if(modList[0]!=null) {                          //remove this once all modules are made
-                modList[0].reset();
-            }
-            if(modList.length==2){
-                modList[1].reset();
-            }
-        }
+    /*---------------------------------------------------
+    Used by GameFrame to see if the bomb has been defused
+    ---------------------------------------------------*/
+    public boolean isDefused() {
+        return defused;
     }
     /*----------------------------------------------------------------------------------------------------------
     This method is used by GameFrame to see how many mistakes the player has made and end the game if strikes==3
@@ -647,11 +701,24 @@ class Bomb extends JPanel implements MouseListener{
     public void changeFace(){
         face=1-face;                    //if face is currently 0, it must change to 1 and vice versa
     }
-    /*----------------------------------------------------------------------
-    This method updates the Bomb whenever the Timer fires in GameFrame class
-     ----------------------------------------------------------------------*/
+    /*-----------------------------------------------------------------------------------------------------
+    This method updates the Bomb whenever the Timer fires in GameFrame class.
+    It also checks how many modules have been defused, so GameFrame knows when the level has been completed
+     -----------------------------------------------------------------------------------------------------*/
     public void updateState(){
         timer.subtractTime();
+        int defusedCount=0;                         //a counter used to track how many modules have been defused
+        for(Modules[] mod:minigames){               //going through each module and seeing if it's defused
+            if(mod[0].checkDefused()){
+                defusedCount++;                     //a defused module has been found
+            }
+            if(mod.length==2 && mod[1]!=null){      //checking modules on the back side of the bomb
+                if(mod[1].checkDefused()){
+                    defusedCount++;
+                }
+            }
+        }
+        defused=(defusedCount==numMod);             //seeing if the player has defused all the modules
     }
     /*---------------------------------------------------------------------------------------------------------
     This method draws a 3 x 2 grid that represents the bomb. It also tells all the modules to draw themselves.
@@ -670,7 +737,7 @@ class Bomb extends JPanel implements MouseListener{
         for(int i=100;i<600;i+=200){
             g.drawLine(100,i,700,i);
         }
-        timer.draw(g);
+        timer.draw(g);                                      //displaying the countdown
         for(Modules[] mod:minigames){                       //drawing the modules on the current face
             Modules facingMod=mod[face];
             if(facingMod!=null) {
@@ -679,6 +746,20 @@ class Bomb extends JPanel implements MouseListener{
         }
         for(int i=0;i<strikes;i++){                         //drawing x's to represent number of strikes
             g.drawImage(strikePic,310+60*i,310,this);
+        }
+    }
+    /*--------------------------------------------------------
+    This method resets a bomb, enabling it to be played again.
+     --------------------------------------------------------*/
+    public void reset(){
+        strikes=face=0;                                     //front face shown by default
+        defused=false;
+        timer.reset();
+        for(Modules[] modList:minigames){                   //telling all the modules to reset themselves
+            modList[0].reset();
+            if(modList.length==2 && modList[1]!=null){
+                modList[1].reset();
+            }
         }
     }
     /*------------------------------------------------------------------------------------------------------
@@ -690,10 +771,10 @@ class Bomb extends JPanel implements MouseListener{
         mouseY=e.getY();
         for(Modules[] mod:minigames){
             Modules facingMod=mod[face];
-            if(facingMod!=null) {                                         //remove this line once all bombs have been made
-                if (!facingMod.alreadyDefused(mouseX, mouseY)) {          //user has clicked on a module that has not been defused
+            if(facingMod!=null) {                                       //when the bomb has 2 sides, some elements in the Array will be null
+                if (!facingMod.alreadyDefused(mouseX, mouseY)) {        //user has clicked on a module that has not been defused
                     currentInteract=facingMod;
-                    facingMod.startInteraction();                         //this enables the actual gameplay with the module
+                    facingMod.startInteraction();                       //this enables the actual gameplay with the module
                 }
                 else {
                     facingMod.setUnfocused();
@@ -701,7 +782,7 @@ class Bomb extends JPanel implements MouseListener{
             }
         }
         if(currentInteract!=null) {
-            if (!currentInteract.correctPlayerAction()) {                  //this can't be called in updateState() because "strikes" would increase every 10 milliseconds, ending the game instantly
+            if (!currentInteract.correctPlayerAction()) {               //this can't be called in updateState() because "strikes" would increase every 10 milliseconds, ending the game instantly
                 strikes++;
             }
         }
@@ -800,7 +881,6 @@ class Modules {
     public void startInteraction(){
         if(type==WIRES){                    //this is where you create anything that needs to be passed in as an argument in the modules' interact()
             correctAction=cut.interact(mouseX,mouseY);
-            System.out.println(correctAction);
         }
         /*if(type==BUTTON){
             correctAction=click.interact();
@@ -866,42 +946,56 @@ class Modules {
         }*/
         return 0;
     }
+    public boolean checkDefused(){
+        if(type==WIRES){
+            defused=cut.checkDefused();
+        }
+        /*if(type==BUTTON){
+            defused=click.checkDefused();
+        }
+        if(type==SYMBOLS){
+            defused=press.checkDefused();
+        }
+        else{
+            defused=pattern.checkDefused();
+        }*/
+        return defused;
+    }
 }
-/*--------------------------------------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------------------------------------------
 This class makes a wire module, draws it, and verifies if user is cutting wires in correct order.
-Each wire is given a code based on its rgb colour, and wires must be cut in ascending order of these codes.
-*---------------------------------------------------------------------------------------------------------*/
+Each wire is assigned a code based on its rgb colour, and wires must be cut in ascending order of these codes.
+The program checks the cutting order of wires based on these codes, but players cut wires according to their colours.
+For example, the manual says to cut blue wires first when there are 3 wires.
+*------------------------------------------------------------------------------------------------------------------*/
 class WireModule{
-    private SingleWire[] wires;				//custom Objects that contain each wire's hitbox and colour
-    private int[][]colours;					//this will contain the rgb colours of the wires
-    private int[] correctOrder;             //contains wire codes in the order they need to be cut
-    private int numWires,allottedTime,startIndex;
-
+    private SingleWire[] wires;				                      //custom Objects that contain each wire's hitbox and colour
+    private int[][]colours;					                      //this will contain the rgb colours of the wires
+    private int[] correctOrder;                                  //contains wire codes in the order they need to be cut
+    private int numWires,allottedTime,startIndex,totalCut;      //totalCut tracks how many wires have been cut in total. The module is defused when player has cut all the wires
     /*------------------------------------------------------------------------
     Constructor which creates random SingleWire Objects to represent the wires
     "startX" and "startY" are where the module's box starts
      ------------------------------------------------------------------------*/
     public WireModule(int startX,int startY){
         Random rand=new Random();
-        numWires=3+rand.nextInt(3);                                                       //3 - 5 possible number of wires
-        allottedTime=10000*numWires;                                                            //20 - 50 seconds to solve the module
-        int[][]allColours={{255,0,0},{0,255,0},{0,0,255},{255,0,255}};  //possible wire colours: red, blue, green, magenta
+        numWires=3+rand.nextInt(3);                                            //3 - 5 possible number of wires
+        allottedTime=10000*numWires;                                                 //20 - 50 seconds to solve the module
+        int[][]allColours={{255,0,0},{0,255,0},{0,0,255},{255,0,255}};              //possible wire colours: red, blue, green, magenta
         correctOrder=new int[numWires];
         wires=new SingleWire[numWires];
-        int spaceBetween=(200-numWires*10)/(numWires+1);                                         //space between wires in order for them to be evenly spaced
-        startIndex=0;
+        int spaceBetween=(200-numWires*10)/(numWires+1);                            //space between wires in order for them to be evenly spaced
+        startIndex=totalCut=0;
 
-        for(int i=0;i<numWires;i++){                                                            //creating 10 random SingleWire Objects
-            int index=rand.nextInt(4);							                        //choosing a random colour out of all the possible colours and assigning it to a wire
+        for(int i=0;i<numWires;i++){                                                //creating 10 random SingleWire Objects
+            int index=rand.nextInt(4);							             //choosing a random colour out of all the possible colours and assigning it to a wire
             int[] rgbSet=allColours[index];
-            correctOrder[i]=rgbSet[0]*numWires+rgbSet[1]*2+rgbSet[2]*3;                         //each rgb value has a certain weighting it contributes to the final code
-            System.out.println("colour: "+Arrays.toString(rgbSet)+" code: "+correctOrder[i]);
+            correctOrder[i]=rgbSet[0]*numWires+rgbSet[1]*2+rgbSet[2]*3*(int)(Math.pow(-1,numWires));     //each rgb value has a certain weighting it contributes to the final code
 
             int YCoord=startY+spaceBetween*(i+1)+10*i;
             wires[i]=new SingleWire(startX,YCoord,rgbSet,correctOrder[i]);
         }
         Arrays.sort(correctOrder);					                    //wires must be cut from least to greatest code value
-        System.out.println(Arrays.toString(correctOrder));
     }
     /*--------------------------------------------------------------------------------------------------------------
     This method draws all wires on the screen, called by paintComponent() in Bomb  whenever Timer fires in GameFrame
@@ -919,6 +1013,12 @@ class WireModule{
             g.fillRect((int) hitbox.getX(), (int) hitbox.getY(), 200, 10);
         }
     }
+    /*----------------------------------------------------
+    Used by the Bomb class to check if modules are defused
+     ----------------------------------------------------*/
+    public boolean checkDefused(){
+        return totalCut==numWires;
+    }
     /*--------------------------------------------------------------------
     This method determines if user is cutting wires in the correct order.
     The value returned determines if the player gets a strike or not.
@@ -934,6 +1034,7 @@ class WireModule{
         if(selected!=null) {
             if (selected.getCode() == correctOrder[startIndex] && !selected.alreadyCut()) {         //check if the correct wire was cut by comparing the correct wire's code to the clicked wire's code
                 startIndex++;                                                                       //the correct wire has been clicked, which means the next wire must be compared to the next element in correctOrder[]
+                totalCut++;
                 selected.setCut();
                 return true;
             }
@@ -947,7 +1048,7 @@ class WireModule{
     This method resets the wire module so a level can be played again
     ----------------------------------------------------------------*/
     public void reset(){
-        startIndex=0;
+        startIndex=totalCut=0;
         for(SingleWire wire:wires){                         //every wire that was cut is now whole again
             if(wire.alreadyCut())
                 wire.setCut();
@@ -1018,38 +1119,49 @@ class SingleWire{
  This class makes a countdown for a Bomb Object
  --------------------------------------------*/
 class TimeModule{
-    private int x,y,time,originalTime;		//time is in milliseconds, x and y are where the module is displayed
-                                            //originalTime is how much time is assigned to the level
+    private int x,y,timeLeft,originalTime;		//time is in milliseconds, x and y are where the module is displayed, originalTime is how much time is assigned to the level
     /*----------------------------------------
     Constructor, module is made in Bomb class
      ----------------------------------------*/
-    public TimeModule(int xCoord, int yCoord, int timeLeft){
+    public TimeModule(int xCoord, int yCoord, int startingTime){
         x=xCoord;
         y=yCoord;
-        time=originalTime=timeLeft;
+        timeLeft=originalTime=startingTime;
+    }
+    /*----------------------------------------------------------------------
+    This method gets the amount of time the player took to defuse the bomb.
+    Called in Bomb once GameFrame has verified that user completed the level.
+    -------------------------------------------------------------------------*/
+    public int getCompletionTime(){
+        return originalTime-timeLeft;
     }
     public int getTime(){
-        return time;
+        return timeLeft;
     }
     /*-------------------------------------------------------------------------
     This method allows players to play a level again by resetting the countdown
      -------------------------------------------------------------------------*/
     public void reset(){
-        time=originalTime;
+        timeLeft=originalTime;
     }
-    /*------------------------------------------------------------------------
-     Responsible for the countdown because it alters the time that's displayed
-     -------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------------------------
+     Responsible for the countdown because it updates the time that's displayed every 10 milliseconds
+     -----------------------------------------------------------------------------------------------*/
     public void subtractTime(){
-        time-=10;					//called every 10 milliseconds
+        timeLeft-=10;					//called every 10 milliseconds
     }
-
+    /*--------------------------------------------------------------------------
+    This method draws the time remaining to defuse the bomb in the style, 00:30
+     -------------------------------------------------------------------------*/
     public void draw(Graphics g){
         g.setColor(Color.BLACK);
         g.drawRect(310,370,180,80);
         g.setFont(new Font("Special Elite",Font.BOLD,50));
-        int min=time/60000;
-        int seconds=(time-(min*60000))/1000;
+        if(timeLeft<10000){
+            g.setColor(Color.RED);
+        }
+        int min=timeLeft/60000;                                                                                //time is currently in milliseconds, but the countdown displays in minutes:seconds
+        int seconds=(timeLeft-(min*60000))/1000;
         String displayed=String.format("%2d:%2d",(int)min,seconds).replace(" ","0");		//replacing blank spaces with 0's so it looks like a timer
         g.drawString(displayed,320,430);
     }
@@ -1059,17 +1171,18 @@ This class makes a frame after user completes a level
 From this frame, user can play again or return to select level screen
  --------------------------------------------------------------------*/
 class GameOverFrame extends JFrame implements ActionListener,MouseListener {
-    private Bomb bomb;                      //necessary field because if user clicks play again, GameFrame constructor needs a BombPanel Object
+    private Bomb bomb;                           //necessary field because if user clicks play again, GameFrame constructor needs a BombPanel Object
     private int levelIndex;                      //potentially necessary if we want return button to return player to select level page
     private JButton returnBut, playAgainBut;     //buttons that allow user to return to select level screen or play again
-    private SelectLevelPage selectLevel;
+    private SelectLevelPage selectLevel;         //necessary field because player can return to main menu from this frame, and main menu's constructor needs a SelectLevelPage
     private AudioClip buttonSound;
     /*---------------------------------------------------------------------------------------------------------------
     Constructor that makes the frame.
     "justPlayed" is the bomb that was completed, necessary because it's used to recreate the bomb if user plays again
     "level" is the level that was just played, necessary to recreate the bomb
+    "score" is a time value, such as 00:30, which is how long it took the player to complete a level
      ----------------------------------------------------------------------------------------------------------------*/
-    public GameOverFrame(Bomb justPlayed, int level,SelectLevelPage levelPage) {    //add score argument
+    public GameOverFrame(Bomb justPlayed, int level,SelectLevelPage levelPage,String score) {
         super("Game Over");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -1085,11 +1198,15 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         back.setSize(800, 600);
         back.setLocation(0, 0);
 
-        JLabel scoreLabel = new JLabel("Final Score: 01:30");            //displays final score
-        scoreLabel.setSize(500, 50);
-        scoreLabel.setFont(new Font("Special Elite", Font.BOLD, 40));
+        JLabel scoreLabel = new JLabel(score);            //the JLabel either displays the player's score, or "You died" if the player failed the level
+        scoreLabel.setLocation(325, 350);
+        if(!score.equals("You died")){
+            scoreLabel=new JLabel("Completion Time: "+score);
+            scoreLabel.setLocation(200,350);
+        }
+        scoreLabel.setSize(500, 60);
+        scoreLabel.setFont(new Font("Special Elite", Font.BOLD, 30));
         scoreLabel.setForeground(Color.WHITE);
-        scoreLabel.setLocation(325, 100);
 
         playAgainBut = new JButton("Play again");
         playAgainBut.addActionListener(this);
@@ -1141,7 +1258,6 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         }
         if (source == playAgainBut) {               //a new game is started when player clicks play again
             setVisible(false);
-            bomb.reset();
             GameFrame actualGame = new GameFrame(bomb, levelIndex,selectLevel);
             actualGame.start();
         }
