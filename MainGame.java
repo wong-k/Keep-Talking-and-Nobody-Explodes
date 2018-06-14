@@ -136,7 +136,7 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
 
     public static void main(String[]args){
         Bomb[] allBombs=new Bomb[10];                       //the bombs are only made once, so they are created in main method
-        /*Random rand=new Random();
+        Random rand=new Random();
         for(int i=0;i<10;i++){                              //making 10 bombs with random modules
             int[] randomModules=new int[i+1];               //the number of modules in a bomb equals the level (1 to 10)
             for(int j=0;j<i+1;j++){                         //Adding random numbers from 1-4 to randomModules[]. These numbers are interpreted as constants in Modules class and are transformed into corresponding modules.
@@ -144,11 +144,11 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
                 randomModules[j]=module;
             }
             allBombs[i]=new Bomb(randomModules);
-        }*/
-        int[] moduleTypes=new int[1];                                                   //remove this code once all modules are implelemented
+        }
+        /*int[] moduleTypes=new int[1];                                                   //remove this code once all modules are implelemented
         Modules wireTest=new Modules(2,100,100);
         moduleTypes[0]=wireTest.getType();
-        allBombs[0]=new Bomb(moduleTypes);                           //remove up until here
+        allBombs[0]=new Bomb(moduleTypes); */                          //remove up until here
         SelectLevelPage selectPage=new SelectLevelPage(0,allBombs);
         new MainGame(selectPage);
     }
@@ -539,10 +539,11 @@ class BookPage extends JPanel{
         bomb=inputBomb;
         locked="Locked";
         back=new ImageIcon("images/game back.png").getImage();
-        modFrequency=new int[4];
-        /*
-        int[] allModules=bomb.getModules();                                     //contains a series of numbers ranging from 1-4
-        HashMap<Integer,Integer> numFrequency=new HashMap<Integer,Integer>();   //Get the frequency of those numbers to find out how many of each module are in this bomb. The first value is the integer, the second value is its frequency
+        modFrequency=new int[4];                                                //{num buttons, num wires, num simon says, num symbols}
+
+        int[] allModules=bomb.getModules();                                     //contains a series of numbers ranging from 1 to 4 that represent the modules
+        System.out.println(Arrays.toString(allModules));                        //the frequency of these numbers must be found in order for BookPage to display how many modules there are
+        HashMap<Integer,Integer> numFrequency=new HashMap<Integer,Integer>();   //the first value is the integer, the second value is its frequency
         for(int i:allModules){
             if(!numFrequency.containsKey(i)){                                   //if this value is unique, put it in the map with a frequency of 1
                 numFrequency.put(i,1);
@@ -551,12 +552,13 @@ class BookPage extends JPanel{
                 int currentFrequency=numFrequency.get(i);
                 numFrequency.put(i,currentFrequency+1);
             }
-        }                                                                   //uncomment once all module code is in
+        }
         for(Map.Entry<Integer,Integer> numPair:numFrequency.entrySet()){        //putting the values into an Array so paintComponent() can display how many of each module there are
             int moduleType=numPair.getKey();                                    //A number from 1 to 4. Since modFrequency[] has a size of 4, subtract 1 to use as an index
             int frequency=numPair.getValue();                                   //how many of that module is in the bomb
             modFrequency[moduleType-1]=frequency;
-        }*/
+        }
+        System.out.println(Arrays.toString(modFrequency));
     }
     /*------------------------------------------------------------------------------------
     This method is used by paintComponent() to tell player if level is locked or unlocked
@@ -621,10 +623,10 @@ class BookPage extends JPanel{
         g.drawString("Level " + pageNum, 300, 70);                   //displaying level number
 
         g.setFont(new Font("Special Elite", Font.PLAIN, 35));
-        g.drawString("Buttons: 10", 310, 140);              //replace "10" with +numMod[0] and so on
-        g.drawString("Wires: 10", 320, 210);                //modFrequency[1]
-        g.drawString("Symbols: 10", 300, 280);              //modFrequency[2]
-        g.drawString("Simon says: 10", 280, 350);           //modFrequency[3]
+        g.drawString("Buttons: "+modFrequency[0], 310, 140);              //replace "10" with +numMod[0] and so on
+        g.drawString("Wires: "+modFrequency[1], 320, 210);                //modFrequency[1]
+        g.drawString("Symbols: "+modFrequency[2], 300, 280);              //modFrequency[2]
+        g.drawString("Simon says: "+modFrequency[3], 280, 350);           //modFrequency[3]
         g.drawString("Status: " + locked, 260, 420);
         if (bomb != null) {
             g.drawString("Best score: " + bomb.getHighScore(), 250, 490);
@@ -643,6 +645,7 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
     private SelectLevelPage selectLevel;        //once a bomb is defused, this Object is used to unlock the next level
     private JButton flipBut;                    //controls which side of the Bomb is displayed
     private Clip bgMusic;                       //background music
+    private AudioClip timerBeep;                //when there are less than 10 seconds left, a beeping nonise plays every second
     /*---------------------------------------------------------------------------------------------------
     Constructor which makes the frame
     "thisBomb" is the Bomb that belongs to the level being played
@@ -692,6 +695,13 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         catch(LineUnavailableException ex){
             System.out.println("Line unavailable.");
         }
+        try{                                                                    //loading the audio file for timer beeping sound effects
+            File soundFile=new File("timer beep.wav");
+            timerBeep=Applet.newAudioClip(soundFile.toURI().toURL());
+        }
+        catch(MalformedURLException e){
+            System.out.println("Can't find audio file");
+        }
         setVisible(true);
     }
     /*-----------------------------------------------------------------
@@ -711,6 +721,9 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         if(source==myTimer){
             bomb.updateState();
             bomb.repaint();
+        }
+        if(bomb.getTime()<10000 && bomb.getTime()%1000==0){                         //if there's less than 10 seconds left, a beeping noise is played every second
+            timerBeep.play();
         }
         if(source==flipBut){                                                        //this makes the bomb show either the front or back side
             bomb.changeFace();
@@ -762,6 +775,7 @@ The Bomb also tells all its modules to draw themselves using methods in Modules 
 When the game is over, the Bomb tells all its modules to reset themselves.
  ----------------------------------------------------------------------------------------------------*/
 class Bomb extends JPanel implements MouseListener{
+    public static final int SIMON=4;        //a constant for clarity when dealing with simon says modules
     private int numMod;                     //the number of modules on this bomb
     private Modules[][] minigames;          //2D Array that contains the modules located on front and back of the Bomb
     private int face;                       //Controls which side of the Bomb is shown. 0 for the front, 1 for the back.
@@ -771,6 +785,7 @@ class Bomb extends JPanel implements MouseListener{
     private TimeModule timer;               //displays the time left to defuse the bomb
     private boolean defused;                //tells GameFrame whether or not the Bomb is defused
     private int bestTime;                   //the lowest time it took the player to complete the level
+    private int[] modConstants;             //used by BookPage to see how many of each module type there are
     /*-----------------------------------------------------------------------------------------------------
     Constructor which makes all the Modules for the Bomb.
     "modTypes" contains numbers from 1 to 4 that're interpreted as constants when a Modules Object is created.
@@ -784,6 +799,7 @@ class Bomb extends JPanel implements MouseListener{
         strikePic=new ImageIcon("images/strike.png").getImage();
         face=strikes=0;                                                                   //the front of the bomb is shown by default
         int[][] cornerCoord={{100,100},{100,300},{300,100},{500,100},{500,300}};          //each module box is drawn as a rectangle, so these are the rectangles' coordinates
+        modConstants=modTypes;
 
         if(numMod>5){                                           //A maximum of 5 modules can fit on one side of the Bomb. In this case, modules need to be assigned to the back of the Bomb
             minigames=new Modules[5][2];                        //Each element has two spots: the first one contains a module on the front of the bomb, the second one is for the back
@@ -808,6 +824,14 @@ class Bomb extends JPanel implements MouseListener{
         }
         timer=new TimeModule(300,300,totalTime);
     }
+    /*------------------------------------------------------------------------------------
+    This method is used by BookPage to see how many of each module type there are.
+    Returns an int Array containing numbers 1 to 4, such as: {1,1,2,2,2,4}
+    BookPage will take these constants and display how many of each module type a Bomb has.
+     ------------------------------------------------------------------------------------*/
+    public int[] getModules(){
+        return modConstants;
+    }
     /*------------------------------------------------------------------------------
     This method is used by GameFrame to see how much time is left to defuse the Bomb
      ------------------------------------------------------------------------------*/
@@ -816,17 +840,18 @@ class Bomb extends JPanel implements MouseListener{
     }
     /*-------------------------------------------------------------------------------------------------
     This method takes in a time value in milliseconds and turns it into a String in the format, "00:30"
+    Used by getScore() and getHighScore() to convert the player's completion times into Strings
      -------------------------------------------------------------------------------------------------*/
     public String convertTime(int timeVal){
-        int min=timeVal/60000;                       //formatting the output
+        int min=timeVal/60000;                                                                        //determining number of minutes in the millisecond value
         int seconds=(timeVal-(min*60000))/1000;
-        String output=String.format("%2d:%2d",(int)min,seconds).replace(" ","0");
+        String output=String.format("%2d:%2d",(int)min,seconds).replace(" ","0");   //formatting the output, help from Aaron Li
         return output;
     }
     /*------------------------------------------------------------------------------------------------------------------------------
     This method returns how much time it took the player to finish the level and makes this the player's best score if it's a record.
     Returns a String in the format of, 00:30
-    Called by GameFrame once it has been verified that player completed the level.
+    Called by GameFrame once it has been verified that player won the level.
     -------------------------------------------------------------------------------------------------------------------------------*/
     public String getScore(){
         int completionTime=timer.getCompletionTime();       //returns a time value in milliseconds
@@ -834,7 +859,7 @@ class Bomb extends JPanel implements MouseListener{
             bestTime=completionTime;
         }
         else {
-            bestTime = Math.min(bestTime, completionTime);         //the lowest time value is wanted
+            bestTime = Math.min(bestTime, completionTime);  //the lowest time value is wanted
         }
         return convertTime(completionTime);
     }
@@ -851,9 +876,9 @@ class Bomb extends JPanel implements MouseListener{
     public boolean isDefused() {
         return defused;
     }
-    /*----------------------------------------------------------------------------------------------------------
-    This method is used by GameFrame to see how many mistakes the player has made and end the game if strikes==3
-    -----------------------------------------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------
+    This method is used by GameFrame to see how many mistakes the player has made
+    -----------------------------------------------------------------------------*/
     public int getStrikes(){
         return strikes;
     }
@@ -874,32 +899,33 @@ class Bomb extends JPanel implements MouseListener{
     It also checks how many modules have been defused, so GameFrame knows when the level has been completed
      -----------------------------------------------------------------------------------------------------*/
     public void updateState(){
-        timer.subtractTime();
+        timer.subtractTime();                       //this updates the countdown
         int defusedCount=0;                         //a counter used to track how many modules have been defused
         for(Modules[] mod:minigames){               //going through each module and seeing if it's defused
-            if(mod[0].checkDefused()){
-                defusedCount++;                     //a defused module has been found
+            if(mod[0].checkDefused()){              //a defused module has been found
+                defusedCount++;
             }
             if(mod.length==2 && mod[1]!=null){      //checking modules on the back side of the bomb
-                if(mod[1].checkDefused()){
+                if(mod[1].checkDefused()){          //a defused module on the back of the bomb has been found
                     defusedCount++;
                 }
             }
             for(Modules simon:mod){
-                if(simon.getType()==4){
+                if(simon.getType()==SIMON){
                     simon.updateStrikes(strikes);
                 }
             }
         }
         defused=(defusedCount==numMod);             //seeing if the player has defused all the modules
     }
-    /*---------------------------------------------------------------------------------------------------------
-    This method draws a 3 x 2 grid that represents the bomb. It also tells all the modules to draw themselves.
+    /*----------------------------------------------------------------------------------------
+    This method updates the panel interface.
+    It draws a 3 x 2 grid that represents the bomb and tells all the modules to draw themselves.
     This is called whenever the Timer fires in GameFrame
-    ----------------------------------------------------------------------------------------------------------*/
+    ------------------------------------------------------------------------------------------*/
     @Override
     public void paintComponent(Graphics g){
-        g.setColor(new Color(211,211,211));
+        g.setColor(new Color(211,211,211));       //drawing a grey rectangle on top of which lines will be drawn to form a grid
         g.drawImage(back,0,0,this);
         g.fillRect(100,100,600,400);
         g.setColor(new Color(0,0,0));
@@ -921,9 +947,9 @@ class Bomb extends JPanel implements MouseListener{
             g.drawImage(strikePic,310+60*i,310,this);
         }
     }
-    /*--------------------------------------------------------
-    This method resets a bomb, enabling it to be played again.
-     --------------------------------------------------------*/
+    /*----------------------------------------------------------
+    This method resets the bomb, enabling it to be played again.
+     -----------------------------------------------------------*/
     public void reset(){
         strikes=face=0;                                     //front face shown by default
         defused=false;
@@ -936,8 +962,8 @@ class Bomb extends JPanel implements MouseListener{
         }
     }
     /*------------------------------------------------------------------------------------------------------
-    This method verifies if the user wants to interact with a module, or if they just clicked on empty space
-    It also checks if the user is defusing a module correctly
+    This method verifies if the user wants to interact with a module or if they just clicked on empty space.
+    It also checks if the user is defusing a module correctly.
     -------------------------------------------------------------------------------------------------------*/
     public void mousePressed(MouseEvent e){
         mouseX=e.getX();
@@ -947,22 +973,22 @@ class Bomb extends JPanel implements MouseListener{
             if(facingMod!=null) {                                       //when the bomb has 2 sides, some elements in the Array will be null
                 if (!facingMod.alreadyDefused(mouseX, mouseY)) {        //user has clicked on a module that has not been defused
                     currentInteract=facingMod;
-                    facingMod.startInteraction();                       //this enables the actual gameplay with the module
+                    facingMod.startInteraction();                       //this enables the actual gameplay with the module, such as cutting wires
                 }
-                else {
+                else {                                                  //only one module is focused on at a time
                     facingMod.setUnfocused();
 
                 }
             }
         }
-        if(currentInteract!=null) {
+        if(currentInteract!=null) {                                     //checking if the player is defusing a module correctly
             if (!currentInteract.correctPlayerAction()) {               //this can't be called in updateState() because "strikes" would increase every 10 milliseconds, ending the game instantly
                 strikes++;
             }
         }
     }
     /*--------------------------------------------------------------------
-    The following method must be implemented in order to use MouseListener
+    The following methods must be implemented in order to use MouseListener
      --------------------------------------------------------------------*/
     public void mouseEntered(MouseEvent e){}
     public void mouseExited(MouseEvent e){}
@@ -970,7 +996,7 @@ class Bomb extends JPanel implements MouseListener{
     public void mouseReleased(MouseEvent e){}
 }
 /*-------------------------------------------------------------------------------------------------------
-This class creates a generic module which is then assigned a specific module, such as wires or simon says
+This class creates a generic module which is then assigned a specific module, such as wires or simon says.
 It tells modules to draw themselves and determines when player has clicked on a module
  -------------------------------------------------------------------------------------------------------*/
 class Modules {
@@ -980,23 +1006,24 @@ class Modules {
     public final int SIMON=4;
 
     private Rectangle mod;                  //the module's hitbox
-    private int type,x,y,strikes;                   //type is one of the constants which indicate the type of module. x and y are coordinates of the hitbox
+    private int type,x,y,strikes;           //type is one of the constants which indicate the type of module. x and y are coordinates of the hitbox. strikes is used by simon says to update its strikes.
     private boolean defused,isFocused;      //defused indicates if this module has been solved or not. isFocused indicates if user has clicked a particular module
     private boolean correctAction;          //this verifies if the user is playing the module correctly
-    private int mouseX,mouseY;
+    private int mouseX,mouseY;              //mouse coordinates
+
     private Button click;                   //only one of these is assigned a value, the rest are null
     private WireModule cut;
     private Symbols press;
     private Simon pattern;
-    /*--------------------------------------------------------------------
+    /*-------------------------------------------------------------------------------------------------
     Constructor that makes the module
-    "modType" indicates what type of module is made based on the constants
-    "x" and "y" are the coordinates of where the module hitbox is
-    ---------------------------------------------------------------------*/
+    "modType" is a number from 1 to 4 that indicates what type of module is made based on the constants
+    "x" and "y" are the top left corner coordinates of the module's hitbox
+    --------------------------------------------------------------------------------------------------*/
     public Modules(int modType,int x,int y){
         type=modType;
-        if(type==BUTTON){
-            click=new Button(x,y);             //add arguments to constructors if necessary
+        if(type==BUTTON){                               //creating the specific modules indicated by modType
+            click=new Button(x,y);
         }
         if(type==WIRES){
             cut=new WireModule(x,y);
@@ -1022,9 +1049,9 @@ class Modules {
     public boolean correctPlayerAction(){
         return correctAction;
     }
-    /*----------------------------------------------------------------
-    Remove this method once we add the code to randomly generate bombs
-    -----------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------------------
+    This method is used by updateState() in Bomb class to update the strikes on simon modules.
+    -----------------------------------------------------------------------------------------*/
     public int getType(){
         return type;
     }
@@ -1038,15 +1065,16 @@ class Modules {
     This method checks if the user clicked on a module that hasn't been defused yet
     Called in mousePressed() in Bomb class
     Returns a boolean that tells the game whether or not the module is already defused
+    "mouseX" and "mouseY" are the coordinates of where the user clicked
     ----------------------------------------------------------------------------------*/
     public boolean alreadyDefused(int mouseX,int mouseY){
         if(mod.contains(mouseX,mouseY)) {
             this.mouseX=mouseX;
             this.mouseY=mouseY;
             isFocused = true;                       //this enables interaction with the module
-            return defused;
+            return defused;                         //this will only be returned if the user actually clicked on the module
         }
-        return true;
+        return true;                                //this must be the opposite of what "defused" is supposed to be if the module can be played
     }
     /*-----------------------------------------------------------------------------------------------------------------
     This method calls the interaction methods of each module.
@@ -1054,7 +1082,7 @@ class Modules {
     This is called in mousePressed() in Bomb class once it has been verified that the player clicked on a valid module
      ------------------------------------------------------------------------------------------------------------------*/
     public void startInteraction(){
-        if(type==WIRES){                    //this is where you create anything that needs to be passed in as an argument in the modules' interact()
+        if(type==WIRES){
             correctAction=cut.interact(mouseX,mouseY);
         }
         if(type==BUTTON){
@@ -1067,10 +1095,10 @@ class Modules {
             correctAction=pattern.interact(mouseX,mouseY,strikes);
         }
     }
-    /*------------------------------------------------------------------------------
-    This method outlines the module box if it's currently focused
-    It also calls the draw methods of each module, which makes them draw themselves
-     ------------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------
+    This method outlines the module box if it's currently focused.
+    It also calls the draw methods of the module, which makes it draw itself.
+     -------------------------------------------------------------------------*/
     public void draw(Graphics g){
         if(isFocused){                      //if this module is currently being focused on, it's outlined in green
             g.setColor(Color.WHITE);
@@ -1092,6 +1120,9 @@ class Modules {
             pattern.draw(g);
         }
     }
+    /*---------------------------------------------------------------------------------
+    This method tells the module to reset itself, allowing the bomb to be played again
+     --------------------------------------------------------------------------------*/
     public void reset(){
         isFocused=false;
         if(type==WIRES){
@@ -1107,6 +1138,11 @@ class Modules {
             pattern.reset();
         }
     }
+    /*-------------------------------------------------------------------------------------------
+    This method is used by Timer module in Bomb class to see how much time is allotted to a level.
+    Each specific module has a designated time, and the Timer module sums these values.
+    Returns the designated time for this module in milliseconds
+    --------------------------------------------------------------------------------------------*/
     public int getAllottedTime(){
         if(type==WIRES) {
             return cut.getAllottedTime();
@@ -1121,6 +1157,10 @@ class Modules {
             return pattern.getAllottedTime();
         }
     }
+    /*---------------------------------------------------------------------
+    This method is used by Bomb class to see if a module has been defused.
+    True means defused, false means not defused.
+     ---------------------------------------------------------------------*/
     public boolean checkDefused(){
         if(type==WIRES){
             defused=cut.checkDefused();
@@ -1136,7 +1176,7 @@ class Modules {
         }
         return defused;
     }
-    public void updateStrikes(int stirkes){
+    public void updateStrikes(int strikes){
         this.strikes=strikes;
     }
 }
@@ -1145,30 +1185,31 @@ This class makes a wire module, draws it, and verifies if user is cutting wires 
 Each wire is assigned a code based on its rgb colour, and wires must be cut in ascending order of these codes.
 The program checks the cutting order of wires based on these codes, but players cut wires according to their colours.
 For example, the manual says to cut blue wires first when there are 3 wires.
-*------------------------------------------------------------------------------------------------------------------*/
+------------------------------------------------------------------------------------------------------------------*/
 class WireModule{
-    private SingleWire[] wires;				                      //custom Objects that contain each wire's hitbox and colour
-    private int[] correctOrder;                                  //contains wire codes in the order they need to be cut
-    private int numWires,allottedTime,startIndex,totalCut;      //totalCut tracks how many wires have been cut in total. The module is defused when player has cut all the wires
-    private int cornerX,cornerY;
-    /*------------------------------------------------------------------------
+    private SingleWire[] wires;				 //custom Objects that contain each wire's hitbox and colour
+    private int[] correctOrder;             //contains wire codes in the order they need to be cut
+    private int numWires,allottedTime;      //numWires is the number of wires, allottedTime is how much time the player has to solve this module
+    private int startIndex,totalCut;       //totalCut tracks how many wires have been cut in total. startIndex is used to go through elements of correctOrder and see if user is cutting wires correctly
+    private int cornerX,cornerY;           //the top left corner of the module box
+    /*----------------------------------------------------------------------------
     Constructor which creates random SingleWire Objects to represent the wires
-    "startX" and "startY" are where the module's box starts
-     ------------------------------------------------------------------------*/
+    "startX" and "startY" are the top left corner coordinates of the module's box
+     ----------------------------------------------------------------------------*/
     public WireModule(int startX,int startY){
         Random rand=new Random();
-        numWires=3+rand.nextInt(3);                                            //3 - 5 possible number of wires
-        allottedTime=10000*numWires;                                                 //20 - 50 seconds to solve the module
-        int[][]allColours={{255,0,0},{0,255,0},{0,0,255},{255,0,255}};              //possible wire colours: red, blue, green, magenta
+        numWires=3+rand.nextInt(3);                                   //3 to 5 possible number of wires
+        allottedTime=10000*numWires;                                         //20 to 50 seconds to solve the module
+        int[][]allColours={{255,0,0},{0,255,0},{0,0,255},{255,0,255}};       //possible wire colours: red, blue, green, magenta
         correctOrder=new int[numWires];
         wires=new SingleWire[numWires];
-        int spaceBetween=(200-numWires*10)/(numWires+1);                            //space between wires in order for them to be evenly spaced
+        int spaceBetween=(200-numWires*10)/(numWires+1);                    //space between wires in order for them to be evenly spaced
         startIndex=totalCut=0;
         cornerX=startX;
         cornerY=startY;
 
-        for(int i=0;i<numWires;i++){                                                //creating 10 random SingleWire Objects
-            int index=rand.nextInt(4);							             //choosing a random colour out of all the possible colours and assigning it to a wire
+        for(int i=0;i<numWires;i++){                                        //creating 10 randomly coloured SingleWire Objects
+            int index=rand.nextInt(4);	    			            //choosing a random colour out of all the possible colours and assigning it to a wire
             int[] rgbSet=allColours[index];
             correctOrder[i]=rgbSet[0]*numWires+rgbSet[1]*2+rgbSet[2]*3*(int)(Math.pow(-1,numWires));     //each rgb value has a certain weighting it contributes to the final code
 
@@ -1178,7 +1219,7 @@ class WireModule{
         Arrays.sort(correctOrder);					                    //wires must be cut from least to greatest code value
     }
     /*--------------------------------------------------------------------------------------------------------------
-    This method draws all wires on the screen, called by paintComponent() in Bomb  whenever Timer fires in GameFrame
+    This method draws all wires on the screen, called by paintComponent() in Bomb whenever Timer fires in GameFrame
      -------------------------------------------------------------------------------------------------------------*/
     public void draw(Graphics g){
         for(SingleWire wire:wires) {
@@ -1192,7 +1233,7 @@ class WireModule{
             }
             g.fillRect((int) hitbox.getX(), (int) hitbox.getY(), 200, 10);
         }
-        g.setColor(Color.RED);
+        g.setColor(Color.RED);                                          //drawing a red circle in the corner of the box that turns green once the module is defused
         if(totalCut==numWires){
             g.setColor(Color.GREEN);
         }
@@ -1220,7 +1261,7 @@ class WireModule{
             if (selected.getCode() == correctOrder[startIndex] && !selected.alreadyCut()) {         //check if the correct wire was cut by comparing the correct wire's code to the clicked wire's code
                 startIndex++;                                                                       //the correct wire has been clicked, which means the next wire must be compared to the next element in correctOrder[]
                 totalCut++;
-                selected.setCut();
+                selected.setCut();                                                                  //this will turn the cut wire white
                 return true;
             }
         }
@@ -1239,22 +1280,25 @@ class WireModule{
                 wire.setCut();
         }
     }
+    /*---------------------------------------------------------------------------------------------------
+    This method is used by Timer module in Bomb to see how much time the player gets to solve this module
+     ----------------------------------------------------------------------------------------------------*/
     public int getAllottedTime(){
         return allottedTime;
     }
 }
-/*-------------------------------------------------
-Each wire in the wire module is a SingleWire Object
---------------------------------------------------*/
+/*----------------------------------------------------------------------------------------------------------------
+Each wire in the wire module is a SingleWire Object.
+The point of the Object is to facilitate the process of drawing wires and verifying if a wire has already been cut.
+------------------------------------------------------------------------------------------------------------------*/
 class SingleWire{
     private Rectangle hitbox;           //the wire's hitbox
-    private int code;
-    private int colour[];               //the wire's colour
+    private int code;                   //the code assigned to the wire based on its rgb colour
+    private int colour[];               //the wire's colour: {r,g,b}
     private boolean cut;                //draw() in WireModule shows different graphics for cut and uncut wires
-
     /*-------------------------------------------------------------------------------------------------------
     Constructor where "x" and "y" are starting coordinates for the hitbox Rectangle.
-    "rgb" is the rgb values for this wire's colour, colourCode is the wire's code that controls cutting order
+    "rgb" is the rgb value for this wire's colour, colourCode is the wire's code that controls cutting order
      -------------------------------------------------------------------------------------------------------*/
     public SingleWire(int x,int y, int[] rgb,int colourCode){
         hitbox=new Rectangle(x,y,200,10);
@@ -1301,13 +1345,16 @@ class SingleWire{
     }
 }
 /*---------------------------------------------
- This class makes a countdown for a Bomb Object
+ This class makes a countdown for a Bomb Object.
+ The Object can draw and reset itself.
  --------------------------------------------*/
 class TimeModule{
     private int x,y,timeLeft,originalTime;		//time is in milliseconds, x and y are where the module is displayed, originalTime is how much time is assigned to the level
-    /*----------------------------------------
-    Constructor, module is made in Bomb class
-     ----------------------------------------*/
+    /*------------------------------------------------------------------
+    Constructor. The module is made in Bomb class.
+    "xCoord" and "yCoord" are top left corner coordinates of the box.
+    "startingTime" is how much time is originally assigned to the level.
+     ------------------------------------------------------------------*/
     public TimeModule(int xCoord, int yCoord, int startingTime){
         x=xCoord;
         y=yCoord;
@@ -1320,6 +1367,9 @@ class TimeModule{
     public int getCompletionTime(){
         return originalTime-timeLeft;
     }
+    /*-----------------------------------------------------------------------------------------------
+    This method is used by Bomb and GameFrame to see how much time is remaining to complete the level
+     ----------------------------------------------------------------------------------------------*/
     public int getTime(){
         return timeLeft;
     }
@@ -1333,7 +1383,7 @@ class TimeModule{
      Responsible for the countdown because it updates the time that's displayed every 10 milliseconds
      -----------------------------------------------------------------------------------------------*/
     public void subtractTime(){
-        timeLeft-=10;					//called every 10 milliseconds
+        timeLeft-=10;
     }
     /*--------------------------------------------------------------------------
     This method draws the time remaining to defuse the bomb in the style, 00:30
@@ -1346,7 +1396,7 @@ class TimeModule{
             g.setColor(Color.RED);
             g.setFont(new Font("Special Elite",Font.BOLD,55));
         }
-        int min=timeLeft/60000;                                                                                //time is currently in milliseconds, but the countdown displays in minutes:seconds
+        int min=timeLeft/60000;                                                                            //time is currently in milliseconds but the countdown displays in minutes:seconds
         int seconds=(timeLeft-(min*60000))/1000;
         String displayed=String.format("%2d:%2d",(int)min,seconds).replace(" ","0");		//replacing blank spaces with 0's so it looks like a timer
         g.drawString(displayed,320,430);
@@ -1357,16 +1407,16 @@ This class makes a frame after user completes a level
 From this frame, user can play again or return to select level screen
  --------------------------------------------------------------------*/
 class GameOverFrame extends JFrame implements ActionListener,MouseListener {
-    private Bomb bomb;                           //necessary field because if user clicks play again, GameFrame constructor needs a BombPanel Object
-    private int levelIndex;                      //potentially necessary if we want return button to return player to select level page
+    private Bomb bomb;                           //necessary field because if user clicks play again, GameFrame constructor needs a Bomb Object
+    private int levelIndex;                      //an index of pages[] in SelectLevelPage. Necessary to recreate GameFrame if playAgain button is clicked
     private JButton returnBut, playAgainBut;     //buttons that allow user to return to select level screen or play again
     private SelectLevelPage selectLevel;         //necessary field because player can return to main menu from this frame, and main menu's constructor needs a SelectLevelPage
-    private AudioClip buttonSound;
+    private AudioClip buttonSound;              //enables button sound effects
     /*---------------------------------------------------------------------------------------------------------------
     Constructor that makes the frame.
-    "justPlayed" is the bomb that was completed, necessary because it's used to recreate the bomb if user plays again
-    "level" is the level that was just played, necessary to recreate the bomb
-    "score" is a time value, such as 00:30, which is how long it took the player to complete a level
+    "justPlayed" is the bomb that was completed, necessary because it's used to recreate GameFrame if user plays again
+    "level" is the level that was just played, necessary to play again
+    "score" can be a time value such as 00:30, which is how long it took the player to complete a level, or "you died"
      ----------------------------------------------------------------------------------------------------------------*/
     public GameOverFrame(Bomb justPlayed, int level,SelectLevelPage levelPage,String score) {
         super("Game Over");
@@ -1377,29 +1427,24 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         levelIndex = level;
         selectLevel=levelPage;
 
-        ImageIcon background = new ImageIcon("images/game back.png");
-        JLabel back = new JLabel(background);
+        ImageIcon background = new ImageIcon("images/game over back.png");
         JLayeredPane thisPage = new JLayeredPane();
         thisPage.setLayout(null);
-        back.setSize(800, 600);
-        back.setLocation(0, 0);
 
         JLabel scoreLabel = new JLabel(score);            //the JLabel either displays the player's score, or "You died" if the player failed the level
-        scoreLabel.setLocation(550,850);
-        JLabel feedbackLabel=new JLabel("Game Over");
-        feedbackLabel.setLocation(250,100);
-
-        if(!score.equals("You died")){                              //player defused the bomb
-            feedbackLabel=new JLabel("Bomb Defused");
+        scoreLabel.setLocation(325,300);
+        if(!score.equals("You died")){                    //player defused the bomb, so different background image and score is shown
+            background=new ImageIcon("images/bomb defused back.png");
             scoreLabel=new JLabel("Completion Time: "+score);
-            scoreLabel.setLocation(550,550);
+            scoreLabel.setLocation(250,300);
         }
+        JLabel back = new JLabel(background);
+        back.setSize(800, 600);
+        back.setLocation(0, 0);
         scoreLabel.setSize(500, 60);
+        scoreLabel.setBackground(Color.WHITE);
         scoreLabel.setFont(new Font("Special Elite", Font.BOLD, 30));
         scoreLabel.setForeground(Color.WHITE);
-        feedbackLabel.setSize(500, 60);
-        feedbackLabel.setFont(new Font("Special Elite", Font.BOLD, 30));
-        feedbackLabel.setForeground(Color.WHITE);
 
         playAgainBut = new JButton("Play again");
         playAgainBut.addActionListener(this);
@@ -1427,9 +1472,8 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         thisPage.add(returnBut, JLayeredPane.DRAG_LAYER);
         thisPage.add(playAgainBut,JLayeredPane.DRAG_LAYER);
         thisPage.add(scoreLabel,JLayeredPane.DRAG_LAYER);
-        thisPage.add(feedbackLabel,JLayeredPane.DRAG_LAYER);
         add(thisPage);
-        try{
+        try{                                                                //loading sound effects for the buttons
             File buttonFile=new File("button click.wav");
             buttonSound=Applet.newAudioClip(buttonFile.toURI().toURL());
         }
@@ -1463,7 +1507,7 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
     public void mouseExited(MouseEvent e) {
         Object source = e.getSource();
         if (source == playAgainBut) {
-            playAgainBut.setForeground(Color.WHITE);     //setForeground() controls text colour
+            playAgainBut.setForeground(Color.WHITE);
         }
         if (source == returnBut) {
             returnBut.setForeground(Color.WHITE);
@@ -1475,7 +1519,7 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
      -------------------------------------------------------------------*/
     public void mouseEntered(MouseEvent e) {
         Object source = e.getSource();
-        if (source == playAgainBut) {   //comment
+        if (source == playAgainBut) {
             playAgainBut.setForeground(Color.RED);
         }
         if (source == returnBut) {
