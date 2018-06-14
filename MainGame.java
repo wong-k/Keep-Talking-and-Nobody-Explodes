@@ -17,6 +17,8 @@ import javax.sound.sampled.*;
 import java.net.MalformedURLException;
 import java.util.*;
 import javax.swing.Timer;		                    //import Timer specifically to avoid conflict with util Timer
+import javax.swing.plaf.basic.BasicArrowButton;
+
 /*------------------------------------------------------------------------------------------------------------------
 This class contains the main method and makes a main menu upon running the program.
 From this frame, player can access html bomb defusal manual, or a select level page.
@@ -166,7 +168,10 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
     private JButton[] levelBut;								//Array that stores the next/previous buttons to flip between pages
     private int level;
     private Bomb[] allBombs;                                //the Array of 10 bombs. Each bomb is assigned to a BookPage Object so it belongs to that level.
-    private AudioClip pageSound,buttonSound;
+    private AudioClip pageSound,buttonSound;                //sound effects for clicking next level, play, or return buttons
+    private CustomPage custom;                              //the page where users customize their own bomb
+    private boolean creatingCustom;                         //indicates whether or not user is creating a custom bomb
+
     /*-----------------------------------------------------------------------------------------
      Constructor which makes the card layout, buttons, and BookPage Objects
      "displayedLevel" is an index of levelBut and pages. It controls which level page is shown.
@@ -182,8 +187,9 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         completeBook=new JPanel(cLayout);
         pages=new BookPage[10];
         myTimer=new Timer(10,this);
-        levelBut=new JButton[10];
+        levelBut=new JButton[11];
         allBombs=bombs;
+        creatingCustom=false;
 
         returnBut=new JButton("Main menu");
         returnBut.addActionListener(this);
@@ -206,22 +212,30 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         playBut.setForeground(Color.BLACK);
         playBut.setFocusPainted(false);
 
-        for(int i=0;i<10;i++){							                //creating a page for each level and 10 buttons that bring the player to specific level pages
+        for(int i=0;i<11;i++){							                //creating 11 buttons that bring the player to specific level pages
             JButton newBut=new JButton("Level "+(i+1));
-            newBut.addActionListener(this);
+            if(i==10){                                                  //the last button leads to a cutom level where player constructs their own bomb
+                newBut=new JButton("Custom");
+            }
+            newBut.addActionListener(this);                          //the size, text colour, and background colour of all buttons is constant
             newBut.addMouseListener(this);
             newBut.setFont(new Font("Special Elite",Font.BOLD,25));
             newBut.setBackground(new Color(255,247,152));
             newBut.setForeground(Color.BLACK);
-            newBut.setSize(150,50);						//the size of all buttons is constant
+            newBut.setSize(150,50);
             newBut.setFocusPainted(false);
             levelBut[i]=newBut;
+        }
 
+        for(int i=0;i<10;i++){                                          //Creating 10 BookPage Objects. These panels display information about a level.
             BookPage newPage=new BookPage(i+1,allBombs[i]);
             pages[i]=newPage;
-            completeBook.add(newPage,(i+1)+"");            //the String assigned to each level is a number from 1 to 10, not an index
+            completeBook.add(newPage,Integer.toString(i+1));         //the String assigned to each level is a number from 1 to 10, not an index
         }
-        try{
+        custom=new CustomPage(playBut,returnBut);
+        completeBook.add(custom,"11");   //adding the customizable level
+
+        try{                                                            //loading sound effects for next page, return, and play buttons
             File pageFile=new File("page flip.wav");
             File buttonFile=new File("button click.wav");
             pageSound=Applet.newAudioClip(pageFile.toURL());
@@ -231,6 +245,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             System.out.println("Can't find audio file");
         }
         unlockLevel(0);                                    //the first level is unlocked by default
+        unlockLevel(9);
         showPage(displayedLevel);                                   //displaying the level indicated by displayedLevel
         getContentPane().add(completeBook);
     }
@@ -245,16 +260,13 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
      ------------------------------------------------------------*/
     public void showPage(int pageIndex){
         currentPage=pages[pageIndex];
-        if(pageIndex==0){                     //the first and last level pages are special cases because they're missing a previous/next button
+        if(pageIndex==0){                                                       //the first page is special because it lacks a previous button
             currentPage.addButtons(null,levelBut[1],returnBut,playBut);
-        }
-        else if(pageIndex==9){
-            currentPage.addButtons(levelBut[8],null,returnBut,playBut);
         }
         else{
             currentPage.addButtons(levelBut[pageIndex-1],levelBut[pageIndex+1],returnBut,playBut);
         }
-        cLayout.show(completeBook,(pageIndex+1)+"");
+        cLayout.show(completeBook,Integer.toString(pageIndex+1));
     }
     /*--------------------------------------------------------------------------------------
      *This method starts the timer, causing the interface to be updated in actionPerformed()
@@ -307,18 +319,35 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             setVisible(false);
             new MainGame(this);
         }
-        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){              //game frame is in charge of updating and drawing the bomb
+        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){       //When user clicks "custom" button, currentPage will stay as page 10. That's ok because once level 10 is done, the customizable level can be played.
             buttonSound.play();
             setVisible(false);
-            GameFrame actualGame=new GameFrame(currentPage.getBomb(),level,this);
-            actualGame.start();
+            if(creatingCustom && custom.getTotalNumMod()>0){
+                GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
+                actualGame.start();
+            }
+            else {
+                GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
+                actualGame.start();
+            }
         }
-        if(source==myTimer){                //updating the level page's graphics
-            currentPage.repaint();
+        if(source==myTimer){                        //updating the level page's graphics
+            if(creatingCustom){
+                custom.repaint();
+            }
+            else {
+                currentPage.repaint();
+            }
+        }
+        if(source==levelBut[10]){                   //player wants to go to customizable level page
+            creatingCustom=true;
+            custom.addButtons(levelBut[9],returnBut,playBut);
+            cLayout.show(completeBook,"11");
         }
         else{								//detecting which level button is clicked and showing the corresponding level page
-            for(int i=0;i<10;i++){
+            for(int i=0;i<10;i++){           //clicking the level 11 button is a special case because the custom page isn't a BookPage Object, and this loop only handles BookPages
                 if(source==levelBut[i]){    //From testing, it was found that buttons occasionally disappear from panels when clicking back and forth.
+                    creatingCustom=false;
                     pageSound.play();
                     showPage(i);            //Therefore, all the buttons must be added whenever a new page is displayed, which is what showPage does.
                 }
@@ -331,6 +360,153 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
     public void mouseClicked(MouseEvent e){}
     public void mouseReleased(MouseEvent e){}
     public void mousePressed(MouseEvent e){}
+}
+/*-------------------------------------------------------------------------------------------------------------------------------------------------
+ This class makes a panel designated to the custom level. Players construct their own bomb by using arrow keys to specify which modules they want.
+ -----------------------------------------------------------------------------------------------------------------------------------------------*/
+class CustomPage extends JPanel implements ActionListener{
+    public final int BUTTON=1;                          //Constants for clarity when dealing with modules
+    public final int WIRES=2;
+    public final int SYMBOLS=3;
+    public final int SIMON=4;
+
+    private String locked;                              //String because paintComponent writes either "Locked" or "Unlocked" on the panel
+    private Image back;                                 //background image
+    private int[] numMod;                               //[num wires, num simon says, num buttons, num symbols]
+    private BasicArrowButton[] allButtons;     //[increase wires, decrease wires, increase simon says, decrease simon says, ...]
+    private int totalNumMod;                            //while customizing the bomb, the total number of modules can't exceed ten
+
+    /*----------------------------------------------------------
+     *Constructor where "level" is the level the page represents
+     *----------------------------------------------------------*/
+    public CustomPage(JButton play,JButton mainMenu){
+        setLayout(null);
+        locked="Locked";
+        totalNumMod=0;
+        numMod=new int[4];
+        allButtons=new BasicArrowButton[8];              //Contains all the buttons that increase/decrease number of modules. ArrayList because the index of buttons needs to be found in actionPerformed
+        back=new ImageIcon("images/game back.png").getImage();
+
+        for(int i=0;i<8;i++){                                                           //adding the 8 buttons
+            BasicArrowButton newBut=new BasicArrowButton(BasicArrowButton.NORTH);       //all the buttons that increase number of modules
+            if(i%2==1){                                                                   //all the buttons that decrease number of modules
+                newBut=new BasicArrowButton(BasicArrowButton.SOUTH);
+            }
+            newBut.setBackground(new Color(255, 247, 152));
+            newBut.setForeground(Color.black);
+            newBut.setSize(50,35);
+            newBut.setLocation(600,90+35*i);                                        //buttons are added in a column
+            newBut.addActionListener(this);
+            allButtons[i]=newBut;
+            add(newBut);
+        }
+        add(play);
+        add(mainMenu);
+    }
+    public int getTotalNumMod(){
+        return totalNumMod;
+    }
+    public Bomb getBomb(){
+        int inputArrayLength=0;
+        for(int i:numMod){                          //sample numMod={3,2,3,1}
+            inputArrayLength+=i;
+        }
+        int[] inputArray=new int[inputArrayLength];
+        int index=0;
+        for(int i=0;i<4;i++){
+            for(int j=0;j<numMod[i];j++){
+                inputArray[index]=i+1;
+                index++;
+            }
+        }
+        return new Bomb("",0,inputArray);
+    }
+    /*------------------------------------------------------------------------------------
+    This method is used by paintComponent() to tell player if level is locked or unlocked
+    ------------------------------------------------------------------------------------*/
+    public String getLockedStatus(){
+        return locked;
+    }
+    /*--------------------------------------------------------------------------
+    Once a level is unlocked, this method updates the interface to reflect that
+     -------------------------------------------------------------------------*/
+    public void unlock(){
+        locked="Unlocked";
+    }
+    public void actionPerformed(ActionEvent e){
+        Object source=e.getSource();
+        for(int i=0;i<8;i++){
+            if(source==allButtons[i]){
+                if(i%2==0){
+                    numMod[i/2]=determineNum(true,i/2);
+                }
+                else{
+                    numMod[i/2]=determineNum(false,i/2);
+                }
+            }
+        }
+    }
+    /*---------------------------------------------------------------------------------------------
+    This method determines how many modules there are after user clicks an increase/decrease button.
+    It makes sure that the total number of modules doesn't exceed ten.
+     ----------------------------------------------------------------------------------------------*/
+    public int determineNum(boolean increase,int numModIndex){
+        if(increase){                               //player wants to increase the number of modules
+            if(totalNumMod+1<=10){     //if the module number can be increased without exceeding ten, increase the module number
+                totalNumMod++;
+                return numMod[numModIndex]+1;
+            }
+        }
+        if(!increase){                              //player wants to decrease the number of modules
+            if(totalNumMod-1>=1){       //there must be at least one module
+                totalNumMod--;
+                return numMod[numModIndex]-1;
+            }
+        }
+        return numMod[numModIndex];                 //the number of modules can't be changed, so the corresponding value in numMod doesn't change
+    }
+    /*---------------------------------------------------------------------------------------------------------------------
+     *This method adds specific buttons to the page
+     *"prev" goes back a level, "next" advances a level,"returnBut" returns player to main menu, "playBut" starts the game
+     *Called in SelectLevelPage actionPerformed() whenever the displayed panel changes
+     *--------------------------------------------------------------------------------------------------------------------*/
+    public void addButtons(JButton prev,JButton returnBut,JButton playBut){
+        if(!isAncestorOf(returnBut)){			//the buttons are added only if the JPanel doesn't already have the button
+            add(returnBut);
+        }
+        if(!isAncestorOf(playBut)){
+            add(playBut);
+        }
+        if(!isAncestorOf(prev)){
+            prev.setLocation(150,510);
+            add(prev);
+        }
+    }
+    /*----------------------------------------------------------------------------------------------------------------------------
+     This method is used to display information about the bomb for a level: time required to complete, modules, current best time
+     Since bombs are randomly created every time the program is run, we need a general method of displaying information,
+     rather than blitting a picture that contains information about the bomb on each page of the book.
+     *---------------------------------------------------------------------------------------------------------------------------*/
+    @Override
+    public void paintComponent(Graphics g) {
+        g.drawImage(back, 0, 0, this);
+        g.setColor(new Color(255, 247, 152));
+        g.fillRect(150, 0, 500, getHeight());
+
+        g.setColor(new Color(0, 0, 0));
+        for (int y = 90; y < 550; y += 70) {
+            g.drawLine(150, y, 650, y);
+        }
+        g.setFont(new Font("Special Elite", Font.BOLD, 50));
+        g.drawString("Custom", 300, 70);                   //displaying level number
+
+        g.setFont(new Font("Special Elite", Font.PLAIN, 35));
+        g.drawString("Buttons: "+numMod[0], 310, 140);
+        g.drawString("Wires: "+numMod[1], 320, 210);
+        g.drawString("Symbols: "+numMod[2], 300, 280);
+        g.drawString("Simon says: "+numMod[3], 280, 350);
+        g.drawString("Status: " + locked, 260, 420);
+    }
 }
 /*---------------------------------------------------------------------------------------------------------------------------------
  *This class makes a panel designated to a specific level. The 10 level pages are created in SelectLevelPage constructor.
@@ -346,21 +522,22 @@ class BookPage extends JPanel{
     private Bomb bomb;                  //the bomb that's played for a specific level
     private String locked;              //String because paintComponent writes either "Locked" or "Unlocked" on the panel
     private Image back;
-    private int numWires,numPatterns,numSymbols,numButtons;
+    private int[] modFrequency;         //number of wires, simon says, button, and symbols modules
 
-    /*----------------------------------------------------------
-     *Constructor where "level" is the level the page represents
-     *----------------------------------------------------------*/
+    /*---------------------------------------------------------------------------------------
+     *Constructor where "level" is a number from 1 to 10. It's the level the page represents
+     *--------------------------------------------------------------------------------------*/
     public BookPage(int level,Bomb inputBomb){
         pageNum=level;
         setLayout(null);
         bomb=inputBomb;
         locked="Locked";
         back=new ImageIcon("images/game back.png").getImage();
+        modFrequency=new int[4];
         /*
         int[] allModules=bomb.getModules();                                     //contains a series of numbers ranging from 1-4
-        HashMap<Integer,Integer> numFrequency=new HashMap<Integer,Integer>();   //get the frequency of those numbers to find out how many of each mmodule are in this bomb
-        for(int i:allModules){                                                  //the first value is the integer, the second value is its frequency
+        HashMap<Integer,Integer> numFrequency=new HashMap<Integer,Integer>();   //Get the frequency of those numbers to find out how many of each module are in this bomb. The first value is the integer, the second value is its frequency
+        for(int i:allModules){
             if(!numFrequency.containsKey(i)){                                   //if this value is unique, put it in the map with a frequency of 1
                 numFrequency.put(i,1);
             }
@@ -369,21 +546,10 @@ class BookPage extends JPanel{
                 numFrequency.put(i,currentFrequency+1);
             }
         }                                                                   //uncomment once all module code is in
-        for(Map.Entry<Integer,Integer> numPair:numFrequency.entrySet()){
-            int moduleType=numPair.getKey();
-            int frequency=numPair.getValue();
-            if(moduleType==BUTTON){
-                numButtons=frequency;
-            }
-            if(moduleType==WIRES){
-                numWires=frequency;
-            }
-            if(moduleType==SYMBOLS){
-                numSymbols=frequency;
-            }
-            if(moduleType==SIMON){
-                numPatterns=frequency;
-            }
+        for(Map.Entry<Integer,Integer> numPair:numFrequency.entrySet()){        //putting the values into an Array so paintComponent() can display how many of each module there are
+            int moduleType=numPair.getKey();                                    //A number from 1 to 4. Since modFrequency[] has a size of 4, subtract 1 to use as an index
+            int frequency=numPair.getValue();                                   //how many of that module is in the bomb
+            modFrequency[moduleType-1]=frequency;
         }*/
     }
     /*------------------------------------------------------------------------------------
@@ -423,11 +589,9 @@ class BookPage extends JPanel{
                 add(prev);
             }
         }
-        if(next!=null){									//the last level page lacks a next button
-            if(!isAncestorOf(next)){
-                next.setLocation(500,510);
-                add(next);
-            }
+        if(!isAncestorOf(next)){
+            next.setLocation(500,510);
+            add(next);
         }
     }
     /*----------------------------------------------------------------------------------------------------------------------------
@@ -450,16 +614,17 @@ class BookPage extends JPanel{
         g.drawString("Level " + pageNum, 300, 70);                   //displaying level number
 
         g.setFont(new Font("Special Elite", Font.PLAIN, 35));
-        g.drawString("Wires: 10", 310, 140);              //replace "10" with +numWires and so on
-        g.drawString("Simon says: 10", 280, 210);
-        g.drawString("Buttons: 10", 300, 280);
-        g.drawString("Symbols: 10", 300, 350);
+        g.drawString("Buttons: 10", 310, 140);              //replace "10" with +numWires and so on
+        g.drawString("Wires: 10", 320, 210);
+        g.drawString("Symbols: 10", 300, 280);
+        g.drawString("Simon says: 10", 280, 350);
         g.drawString("Status: " + locked, 260, 420);
         if (bomb != null) {
             g.drawString("Best score: " + bomb.getHighScore(), 250, 490);
         }
     }
 }
+
 /*----------------------------------------------------------------
 This class controls the gameplay by displaying and updating a Bomb
  -----------------------------------------------------------------*/
@@ -545,7 +710,7 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             bgMusic.stop();
             setVisible(false);
             if(bomb.isDefused()){
-                selectLevel.unlockLevel(Math.min(levelIndex+1,10));                 //Unlocking the next level for the player. This will still get called when user completes custom level,
+                selectLevel.unlockLevel(Math.min(levelIndex+1,9));                 //Unlocking the next level for the player. This will still get called when user completes custom level, so capping the argument at 9 prevents an index our of bounds error.
                                                                                     //but since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
                 new GameOverFrame(bomb,levelIndex,selectLevel,bomb.getScore());
             }
@@ -605,6 +770,7 @@ class Bomb extends JPanel implements MouseListener{
     ------------------------------------------------------------------------------------------------------*/
     public Bomb(String serialCode,int bat,int[] modTypes){
         addMouseListener(this);
+        System.out.println(Arrays.toString(modTypes));
         allModules=modTypes;
         serial=serialCode;
         numBat=bat;
@@ -623,11 +789,11 @@ class Bomb extends JPanel implements MouseListener{
             minigames = new Modules[modTypes.length][1];
         }
         for(int i=0;i<numMod;i++) {                             //assigning modules to the new 2D Array
-            if (i<=5) {
+            if (i<5) {
                 minigames[i][0] = new Modules(modTypes[i],cornerCoord[i][0],cornerCoord[i][1]);
             }
             else {                                              //the front of the bomb only has room for 5 modules, so we go back and start adding modules to the back
-                minigames[i - 6][1] = new Modules(modTypes[i],cornerCoord[i-6][0],cornerCoord[i-6][1]);
+                minigames[i - 5][1] = new Modules(modTypes[i],cornerCoord[i-5][0],cornerCoord[i-5][1]);
             }
         }
         int totalTime=1000;                                         //creating a timer
@@ -698,8 +864,13 @@ class Bomb extends JPanel implements MouseListener{
     This method changes the displayed side of the bomb when flip button is clicked in GameFrame.
     Changing "face" will change the modules that're drawn
     ------------------------------------------------------------------------------------------*/
-    public void changeFace(){
-        face=1-face;                    //if face is currently 0, it must change to 1 and vice versa
+    public void changeFace() {
+        if (minigames[0].length == 2) {         //if the bomb has enough modules for 2 sides
+            face = 1 - face;                    //if face is currently 0, it must change to 1 and vice versa
+        }
+        else{
+            face=0;
+        }
     }
     /*-----------------------------------------------------------------------------------------------------
     This method updates the Bomb whenever the Timer fires in GameFrame class.
@@ -778,6 +949,7 @@ class Bomb extends JPanel implements MouseListener{
                 }
                 else {
                     facingMod.setUnfocused();
+
                 }
             }
         }
@@ -871,7 +1043,7 @@ class Modules {
             isFocused = true;                       //this enables interaction with the module
             return defused;
         }
-        return false;
+        return true;
     }
     /*-----------------------------------------------------------------------------------------------------------------
     This method calls the interaction methods of each module.
@@ -918,6 +1090,7 @@ class Modules {
         }*/
     }
     public void reset(){
+        isFocused=false;
         if(type==WIRES){
             cut.reset();
         }
@@ -970,9 +1143,9 @@ For example, the manual says to cut blue wires first when there are 3 wires.
 *------------------------------------------------------------------------------------------------------------------*/
 class WireModule{
     private SingleWire[] wires;				                      //custom Objects that contain each wire's hitbox and colour
-    private int[][]colours;					                      //this will contain the rgb colours of the wires
     private int[] correctOrder;                                  //contains wire codes in the order they need to be cut
     private int numWires,allottedTime,startIndex,totalCut;      //totalCut tracks how many wires have been cut in total. The module is defused when player has cut all the wires
+    private int cornerX,cornerY;
     /*------------------------------------------------------------------------
     Constructor which creates random SingleWire Objects to represent the wires
     "startX" and "startY" are where the module's box starts
@@ -986,14 +1159,16 @@ class WireModule{
         wires=new SingleWire[numWires];
         int spaceBetween=(200-numWires*10)/(numWires+1);                            //space between wires in order for them to be evenly spaced
         startIndex=totalCut=0;
+        cornerX=startX;
+        cornerY=startY;
 
         for(int i=0;i<numWires;i++){                                                //creating 10 random SingleWire Objects
             int index=rand.nextInt(4);							             //choosing a random colour out of all the possible colours and assigning it to a wire
             int[] rgbSet=allColours[index];
             correctOrder[i]=rgbSet[0]*numWires+rgbSet[1]*2+rgbSet[2]*3*(int)(Math.pow(-1,numWires));     //each rgb value has a certain weighting it contributes to the final code
 
-            int YCoord=startY+spaceBetween*(i+1)+10*i;
-            wires[i]=new SingleWire(startX,YCoord,rgbSet,correctOrder[i]);
+            int yCoord=startY+spaceBetween*(i+1)+10*i;
+            wires[i]=new SingleWire(startX,yCoord,rgbSet,correctOrder[i]);
         }
         Arrays.sort(correctOrder);					                    //wires must be cut from least to greatest code value
     }
@@ -1012,6 +1187,11 @@ class WireModule{
             }
             g.fillRect((int) hitbox.getX(), (int) hitbox.getY(), 200, 10);
         }
+        g.setColor(Color.RED);
+        if(totalCut==numWires){
+            g.setColor(Color.GREEN);
+        }
+        g.fillOval(cornerX+180,cornerY+10,10,10);
     }
     /*----------------------------------------------------
     Used by the Bomb class to check if modules are defused
@@ -1157,8 +1337,9 @@ class TimeModule{
         g.setColor(Color.BLACK);
         g.drawRect(310,370,180,80);
         g.setFont(new Font("Special Elite",Font.BOLD,50));
-        if(timeLeft<10000){
+        if(timeLeft<10000){                                                         //time becomes bigger and turns red once there are less than 10 seconds left
             g.setColor(Color.RED);
+            g.setFont(new Font("Special Elite",Font.BOLD,55));
         }
         int min=timeLeft/60000;                                                                                //time is currently in milliseconds, but the countdown displays in minutes:seconds
         int seconds=(timeLeft-(min*60000))/1000;
