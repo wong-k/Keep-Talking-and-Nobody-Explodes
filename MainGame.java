@@ -76,7 +76,7 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         add(mainPage);
         try{                                                                    //loading the audio file for button sound effects
             File soundFile=new File("button click.wav");
-            sound=Applet.newAudioClip(soundFile.toURL());
+            sound=Applet.newAudioClip(soundFile.toURI().toURL());
         }
         catch(MalformedURLException e){
             System.out.println("Can't find audio file");
@@ -237,13 +237,14 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         try{                                                            //loading sound effects for next page, return, and play buttons
             File pageFile=new File("page flip.wav");
             File buttonFile=new File("button click.wav");
-            pageSound=Applet.newAudioClip(pageFile.toURL());
-            buttonSound=Applet.newAudioClip(buttonFile.toURL());
+            pageSound=Applet.newAudioClip(pageFile.toURI().toURL());
+            buttonSound=Applet.newAudioClip(buttonFile.toURI().toURL());
         }
         catch(MalformedURLException e){
             System.out.println("Can't find audio file");
         }
         unlockLevel(0);                                    //the first level is unlocked by default
+        custom.unlock();
         showPage(displayedLevel);                                   //displaying the level indicated by the parameter
         getContentPane().add(completeBook);
     }
@@ -286,14 +287,14 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             setVisible(false);
             new MainGame(this);
         }
-        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){          //player has clicked play on a page that's unlocked, so start the game
+        if(source==playBut){          //player has clicked play on a page that's unlocked, so start the game
             buttonSound.play();                                                           //When user clicks "custom" button, currentPage will stay as page 10. That's ok because at this point, every level is unlocked.
             setVisible(false);
             if(creatingCustom && custom.getTotalNumMod()>0){                              //the player is making their own bomb, but it must have at least one module
                 GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
                 actualGame.start();
             }
-            else {                                                                        //a normal level is being played
+            else if(currentPage.getLockedStatus().equals("Unlocked")) {                                                                        //a normal level is being played
                 GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
                 actualGame.start();
             }
@@ -1132,7 +1133,7 @@ class Modules {
         if(type==SYMBOLS){
             defused=press.checkDefused();
         }
-        else{
+        if(type==SIMON){
             defused=pattern.checkDefused();
         }
         return defused;
@@ -1378,7 +1379,7 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         levelIndex = level;
         selectLevel=levelPage;
 
-        ImageIcon background = new ImageIcon("images/game over back.png");
+        ImageIcon background = new ImageIcon("images/game back.png");
         JLabel back = new JLabel(background);
         JLayeredPane thisPage = new JLayeredPane();
         thisPage.setLayout(null);
@@ -1386,14 +1387,21 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         back.setLocation(0, 0);
 
         JLabel scoreLabel = new JLabel(score);            //the JLabel either displays the player's score, or "You died" if the player failed the level
-        scoreLabel.setLocation(325, 350);
-        if(!score.equals("You died")){
+        scoreLabel.setLocation(550,850);
+        JLabel feedbackLabel=new JLabel("Game Over");
+        feedbackLabel.setLocation(250,100);
+
+        if(!score.equals("You died")){                              //player defused the bomb
+            feedbackLabel=new JLabel("Bomb Defused");
             scoreLabel=new JLabel("Completion Time: "+score);
-            scoreLabel.setLocation(200,350);
+            scoreLabel.setLocation(550,550);
         }
         scoreLabel.setSize(500, 60);
         scoreLabel.setFont(new Font("Special Elite", Font.BOLD, 30));
         scoreLabel.setForeground(Color.WHITE);
+        feedbackLabel.setSize(500, 60);
+        feedbackLabel.setFont(new Font("Special Elite", Font.BOLD, 30));
+        feedbackLabel.setForeground(Color.WHITE);
 
         playAgainBut = new JButton("Play again");
         playAgainBut.addActionListener(this);
@@ -1421,10 +1429,11 @@ class GameOverFrame extends JFrame implements ActionListener,MouseListener {
         thisPage.add(returnBut, JLayeredPane.DRAG_LAYER);
         thisPage.add(playAgainBut,JLayeredPane.DRAG_LAYER);
         thisPage.add(scoreLabel,JLayeredPane.DRAG_LAYER);
+        thisPage.add(feedbackLabel,JLayeredPane.DRAG_LAYER);
         add(thisPage);
         try{
             File buttonFile=new File("button click.wav");
-            buttonSound=Applet.newAudioClip(buttonFile.toURL());
+            buttonSound=Applet.newAudioClip(buttonFile.toURI().toURL());
         }
         catch(MalformedURLException e){
             System.out.println("Can't find audio file");
