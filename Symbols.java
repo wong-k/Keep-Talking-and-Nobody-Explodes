@@ -1,19 +1,24 @@
 import java.awt.*;
+import java.awt.geom.Ellipse2D;
 import java.util.*;
 public class Symbols{
+    private Ellipse2D defu;
     private Rectangle[] symbols; //4 symbol rectangles in the middle of the module.
-    private Image[]images;
+    private Image[][]images;
+    private Image[]options;
     private TreeSet<Integer>right,undo;
     private Random ran;
     private Rectangle symbol; //The rectangle of the module itself
     private int time; //This counts how many correct symbols the player presses
     private boolean defused; //Standard defuse boolean depicting whether or not the module has been defused
     private ArrayList<Integer>selected; //List of symbols randomly selected from the "order" of symbols it's being chosen from
-    public Symbols(int[]order,Rectangle mod,Image[]options){ //Order is the line of symbols that we are choosing from
+    public Symbols(int x,int y){
+        int[]order={0,1,2,3,4,5,6};
         time=50;
-        symbol=mod;
+        symbol=new Rectangle(x,y,200,200);
         symbols=new Rectangle[4];
         ran=new Random();
+        options=images[ran.nextInt(4)];
         right=new TreeSet<Integer>();
         undo=new TreeSet<Integer>();
         selected=new ArrayList<Integer>();
@@ -30,6 +35,7 @@ public class Symbols{
         for(int i=0;i<4;i++){
             symbols[i]=new Rectangle(symbol.x+25+76*(i-1<=0 ? 0:1),symbol.y+25+76*(i%2),75,75);//Need (x+25,y+25,75,75),(x+101,y+25,75,75),(x+25,y+101,75,75),(x+101,+101
         }
+        defu=new Ellipse2D.Double(symbol.getX()+180.0,symbol.getY()+10.0,10.0,10.0);
     }
     /*---------------------------------
     *This is the interact function that will be used for each of the modules
@@ -53,7 +59,7 @@ public class Symbols{
         return false;
     }
     public int getAllottedTime(){return time;}
-    public boolean isdefused(){
+    public boolean checkDefused(){
         return defused;
     }
     public void reset(){
@@ -67,6 +73,7 @@ public class Symbols{
         g.setColor(new Color(246,231,206));
         for(int i=0;i<4;i++) {
             g.fillRect((int)(symbols[i].getX()),(int)(symbols[i].getY()),(int)(symbols[i].getWidth()),(int)(symbols[i].getHeight()));
+            g.drawImage(options[selected.get(i)],(int)(symbols[i].getX())+5,(int)(symbols[i].getY())+5,null);
         }
         for(int i=0;i<2;i++){
             for(int j=0;j<2;j++){
@@ -81,5 +88,10 @@ public class Symbols{
                 }
             }
         }
+        g.setColor(Color.RED);
+        if(defused) {
+            g.setColor(Color.GREEN);
+        }
+        g.fillOval((int)(defu.getX()),(int)(defu.getY()),10,10);
     }
 }

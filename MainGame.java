@@ -767,7 +767,6 @@ class Bomb extends JPanel implements MouseListener{
     private int bestTime;                   //the lowest time it took the player to complete the level
     /*-----------------------------------------------------------------------------------------------------
     This is the constructor of the bomb
-    "serial" is a serial code, "bat" is number of batteries
     "modTypes" contains numbers from 1-4 that're interpreted as constants when a Modules Object is created
     ------------------------------------------------------------------------------------------------------*/
     public Bomb(int[] modTypes){
@@ -887,6 +886,11 @@ class Bomb extends JPanel implements MouseListener{
                     defusedCount++;
                 }
             }
+            for(Modules simon:mod){
+                if(simon.getType()==4){
+                    simon.updateStrikes(strikes);
+                }
+            }
         }
         defused=(defusedCount==numMod);             //seeing if the player has defused all the modules
     }
@@ -977,14 +981,14 @@ class Modules {
     public final int SIMON=4;
 
     private Rectangle mod;                  //the module's hitbox
-    private int type,x,y;                   //type is one of the constants which indicate the type of module. x and y are coordinates of the hitbox
+    private int type,x,y,strikes;                   //type is one of the constants which indicate the type of module. x and y are coordinates of the hitbox
     private boolean defused,isFocused;      //defused indicates if this module has been solved or not. isFocused indicates if user has clicked a particular module
     private boolean correctAction;          //this verifies if the user is playing the module correctly
     private int mouseX,mouseY;
     private Button click;                   //only one of these is assigned a value, the rest are null
     private WireModule cut;
-    //private Symbols press;
-    //private Simon pattern;
+    private Symbols press;
+    private Simon pattern;
     /*--------------------------------------------------------------------
     Constructor that makes the module
     "modType" indicates what type of module is made based on the constants
@@ -992,24 +996,25 @@ class Modules {
     ---------------------------------------------------------------------*/
     public Modules(int modType,int x,int y){
         type=modType;
-        /*if(type==BUTTON){
-            click=new Button();             //add arguments to constructors if necessary
-        }*/
+        if(type==BUTTON){
+            click=new Button(x,y);             //add arguments to constructors if necessary
+        }
         if(type==WIRES){
             cut=new WireModule(x,y);
         }
-        /*if(type==SYMBOLS){
-            press=new Symbols();
+        if(type==SYMBOLS){
+            press=new Symbols(x,y);
         }
         if(type==SIMON){
-            pattern=new Simon();
-        }*/
+            pattern=new Simon(x,y);
+        }
         this.x=x;
         this.y=y;
         mod=new Rectangle(x,y,200,200);
         isFocused=false;                                //by default, the module has not been defused yet and it hasn't been clicked on
         defused=false;
         correctAction=true;
+        strikes=0;
     }
     /*---------------------------------------------------------------------------------------
     This method is used by Bomb class to see if user is interacting correctly with the module.
@@ -1053,15 +1058,15 @@ class Modules {
         if(type==WIRES){                    //this is where you create anything that needs to be passed in as an argument in the modules' interact()
             correctAction=cut.interact(mouseX,mouseY);
         }
-        /*if(type==BUTTON){
-            correctAction=click.interact();
+        if(type==BUTTON){
+            correctAction=click.interact(mouseX,mouseY);
         }
         if(type==SYMBOLS){
-            correctAction=press.interact();
+            correctAction=press.interact(mouseX,mouseY);
         }
         if(type==SIMON){
-            correctAction=pattern.interact();
-        }*/
+            correctAction=pattern.interact(mouseX,mouseY,strikes);
+        }
     }
     /*------------------------------------------------------------------------------
     This method outlines the module box if it's currently focused
@@ -1078,7 +1083,7 @@ class Modules {
         if(type==WIRES){
             cut.draw(g);
         }
-        /*if(type==BUTTON){
+        if(type==BUTTON){
             click.draw(g);
         }
         if(type==SYMBOLS){
@@ -1086,14 +1091,14 @@ class Modules {
         }
         if(type==SIMON){
             pattern.draw(g);
-        }*/
+        }
     }
     public void reset(){
         isFocused=false;
         if(type==WIRES){
             cut.reset();
         }
-        /*if(type==BUTTON){
+        if(type==BUTTON){
             click.reset();
         }
         if(type==SYMBOLS){
@@ -1101,13 +1106,13 @@ class Modules {
         }
         if(type==SIMON){
             pattern.reset();
-        }*/
+        }
     }
     public int getAllottedTime(){
         if(type==WIRES) {
             return cut.getAllottedTime();
         }
-        /*if(type==BUTTON){
+        if(type==BUTTON){
             return click.getAllottedTime();
         }
         if(type==SYMBOLS){
@@ -1115,14 +1120,13 @@ class Modules {
         }
         else{
             return pattern.getAllottedTime();
-        }*/
-        return 0;
+        }
     }
     public boolean checkDefused(){
         if(type==WIRES){
             defused=cut.checkDefused();
         }
-        /*if(type==BUTTON){
+        if(type==BUTTON){
             defused=click.checkDefused();
         }
         if(type==SYMBOLS){
@@ -1130,8 +1134,11 @@ class Modules {
         }
         else{
             defused=pattern.checkDefused();
-        }*/
+        }
         return defused;
+    }
+    public void updateStrikes(int stirkes){
+        this.strikes=strikes;
     }
 }
 /*-----------------------------------------------------------------------------------------------------------------
