@@ -1,10 +1,10 @@
 /*
  MainGame.java
  The goal of this 2-player game is to defuse a bomb by solving numerous puzzles within a time limit.
- Upon running, a main menu frame is displayed. From here, player can access html manual or a select level page.
- From the select level page, the user can click play, which brings user to the game frame.
- A 3 x 2 grid which represents the bomb is shown on screen, and the user must complete all puzzles before time runs out.
- After the game ends, the user can play again or go play the rest of the levels.
+ Upon running, a main menu frame is displayed. From here, players can access an html manual or a select level page.
+ From the select level page, the user can click play, which brings them to the game frame.
+ A 3 x 2 grid which represents the bomb is shown on screen. The user must complete all puzzles in the square before time runs out.
+ After the game ends, the user is brought to the game over frame, where they can play again or go play the rest of the levels.
  Once the player has completed all 10 levels, they unlock a customizable level where they create their own bomb.
  Keith Wong, Erik Yzeiri
  */
@@ -16,21 +16,21 @@ import java.awt.event.*;
 import javax.sound.sampled.*;
 import java.net.MalformedURLException;
 import java.util.*;
-import javax.swing.Timer;		                    //import Timer specifically to avoid conflict with util Timer
+import javax.swing.Timer;
 import javax.swing.plaf.basic.BasicArrowButton;
 
 /*------------------------------------------------------------------------------------------------------------------
 This class contains the main method and makes a main menu upon running the program.
-From this frame, player can access html bomb defusal manual, or a select level page.
+From this frame, player can access an html bomb defusal manual, or a select level page.
 Implements ActionListener to detect when buttons are clicked, MouseListener to detect when mouse hovers over a button.
 --------------------------------------------------------------------------------------------------------------------*/
 public class MainGame extends JFrame implements ActionListener,MouseListener {
-    private JButton playBut,infoBut;				//buttons that bring user to level selection and instruction pages
-    private Bomb[] allBombs;                        //contains 10 randomly generated bombs for the game
-    private SelectLevelPage selectLevel;            //the select level page that's displayed once player clicks "Select level"
-    private AudioClip sound;                        //enables sound effects for the buttons
+    private JButton playBut,infoBut;			//buttons that bring user to level selection and instruction pages
+    private Bomb[] allBombs;                   //contains 10 randomly generated bombs for the game
+    private SelectLevelPage selectLevel;       //the select level page that's displayed once player clicks "Select level"
+    private AudioClip sound;                   //enables sound effects for the buttons
     /*-------------------------------------------------------------------------------------------------------------------------
-    Constructor which makes the main menu by creating the frame, adding images, and adding buttons.
+    Constructor which makes the main menu by creating the frame, adding images and adding buttons.
     Rather than having to create a new SelectLevelPage whenever user clicks play, a SelectLevelPage is passed in as an argument
      -------------------------------------------------------------------------------------------------------------------------*/
     public MainGame(SelectLevelPage selectPage) {
@@ -103,6 +103,18 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
             }
         }
     }
+    /*-------------------------------------------------------------------
+    This method makes button text white when mouse hovers over the button
+    -------------------------------------------------------------------*/
+    public void mouseEntered(MouseEvent e){
+        Object source=e.getSource();
+        if(source==playBut){
+            playBut.setForeground(Color.WHITE);
+        }
+        if(source==infoBut){
+            infoBut.setForeground(Color.WHITE);
+        }
+    }
     /*-------------------------------------------------------------------------------
     This method makes the button text black when mouse isn't hovering over the buttons
     ---------------------------------------------------------------------------------*/
@@ -113,18 +125,6 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         }
         if(source==infoBut){
             infoBut.setForeground(Color.BLACK);
-        }
-    }
-    /*-------------------------------------------------------------------
-    This method makes button text white when mouse hovers over the button
-     -------------------------------------------------------------------*/
-    public void mouseEntered(MouseEvent e){
-        Object source=e.getSource();
-        if(source==playBut){
-            playBut.setForeground(Color.WHITE);
-        }
-        if(source==infoBut){
-            infoBut.setForeground(Color.WHITE);
         }
     }
     /*-------------------------------------------------------------------------
@@ -138,17 +138,17 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         Bomb[] allBombs=new Bomb[10];                       //the bombs are only made once, so they are created in main method
         /*Random rand=new Random();
         for(int i=0;i<10;i++){                              //making 10 bombs with random modules
-            int[] randomModules=new int[i+1];               //the number of modules equals the level of the bomb (1 to 10)
-            for(int j=0;j<i+1;j++){                         //Adding random numbers from 1-4 to randomModules[]. These numbers are interpreted as constants in Modules class and are transformed into appropriate modules.
+            int[] randomModules=new int[i+1];               //the number of modules in a bomb equals the level (1 to 10)
+            for(int j=0;j<i+1;j++){                         //Adding random numbers from 1-4 to randomModules[]. These numbers are interpreted as constants in Modules class and are transformed into corresponding modules.
                 int module=rand.nextInt(4)+1;
                 randomModules[j]=module;
-            }                                               //generate serial codes and battery numbers
-            allBombs[i]=new Bomb("",0,randomModules);
+            }
+            allBombs[i]=new Bomb(randomModules);
         }*/
         int[] moduleTypes=new int[1];                                                   //remove this code once all modules are implelemented
         Modules wireTest=new Modules(2,100,100);
         moduleTypes[0]=wireTest.getType();
-        allBombs[0]=new Bomb("",0,moduleTypes);                           //remove up until here
+        allBombs[0]=new Bomb(moduleTypes);                           //remove up until here
         SelectLevelPage selectPage=new SelectLevelPage(0,allBombs);
         new MainGame(selectPage);
     }
@@ -159,26 +159,25 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
  Since the select level page has many fields and processes in its construction, it's only created once in the main method.
  *----------------------------------------------------------------------------------------------------------------------*/
 class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
-    private JPanel completeBook;							//JPanel that stores all the other panels in cardLayout
+    private JPanel completeBook;				    //JPanel that stores all the other panels in cardLayout
     private CardLayout cLayout;
-    private BookPage[] pages;								//The Objects that represent the pages of the book. The Array is used to update the displayed panel when a button is clicked
-    private BookPage currentPage;							//The current page being shown. This is used to update the panel's interface.
-    private Timer myTimer;                                  //fires every 10 milliseconds and causes the interface to update
-    private JButton returnBut,playBut;						//buttons that bring user to main menu and start the game
-    private JButton[] levelBut;								//Array that stores the next/previous buttons to flip between pages
-    private int level;
-    private Bomb[] allBombs;                                //the Array of 10 bombs. Each bomb is assigned to a BookPage Object so it belongs to that level.
-    private AudioClip pageSound,buttonSound;                //sound effects for clicking next level, play, or return buttons
-    private CustomPage custom;                              //the page where users customize their own bomb
-    private boolean creatingCustom;                         //indicates whether or not user is creating a custom bomb
+    private BookPage[] pages;						//The Objects that represent the pages of the book. The Array is used to update the displayed panel when a button is clicked
+    private BookPage currentPage;					//The current page being shown. This is used to update the panel's interface.
+    private Timer myTimer;                         //fires every 10 milliseconds and causes the interface to update
+    private JButton returnBut,playBut;			    //buttons that bring user to main menu and start the game
+    private JButton[] levelBut;						//Array that stores the next/previous buttons to flip between pages
+    private int level;                             //an index of pages[] that's used when constructing GameFrame. index+1 gives a number from 1 to 10.
+    private Bomb[] allBombs;                       //the Array of 10 bombs. Each bomb is assigned to a BookPage Object so it belongs to that level.
+    private AudioClip pageSound,buttonSound;       //sound effects for clicking next level, play, or return buttons
+    private CustomPage custom;                     //the page where users customize their own bomb
+    private boolean creatingCustom;                //indicates whether or not user is creating a custom bomb
 
-    /*-----------------------------------------------------------------------------------------
+    /*----------------------------------------------------------------------------------------------------------------------
      Constructor which makes the card layout, buttons, and BookPage Objects
-     "displayedLevel" is an index of levelBut and pages. It controls which level page is shown.
-     displayedLevel+1 equals a level number ranging from 1 to 10.
-     *-----------------------------------------------------------------------------------------*/
+     "displayedLevel" is an index of levelBut and pages. It controls which level page is initially shown (level 1 by default)
+     *----------------------------------------------------------------------------------------------------------------------*/
     public SelectLevelPage(int displayedLevel,Bomb[] bombs){
-        super("Select Level");						//the following lines assign values to the fields and create the frame
+        super("Select Level");
         setSize(800,600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -191,11 +190,11 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         allBombs=bombs;
         creatingCustom=false;
 
-        returnBut=new JButton("Main menu");
-        returnBut.addActionListener(this);
+        returnBut=new JButton("Main menu");         //The location of the return and play buttons is constant for all pages, so they're created here.
+        returnBut.addActionListener(this);            //On the other hand, the buttons for the levels changes location depending on the displayed panel, so they're not designated a location here
         returnBut.addMouseListener(this);
-        returnBut.setSize(150,50);			//the location of the return and play buttons is constant for all pages, whereas the buttons for the levels changes location depending on the displayed panel
-        returnBut.setLocation(0,510);			    //since return and play buttons remain constant, they're created here
+        returnBut.setSize(150,50);
+        returnBut.setLocation(0,510);
         returnBut.setFont(new Font("Special Elite",Font.BOLD,20));
         returnBut.setBackground(new Color(46,32,28));
         returnBut.setForeground(Color.WHITE);
@@ -212,9 +211,9 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         playBut.setForeground(Color.BLACK);
         playBut.setFocusPainted(false);
 
-        for(int i=0;i<11;i++){							                //creating 11 buttons that bring the player to specific level pages
+        for(int i=0;i<11;i++){							                //creating 11 buttons that cause a different BookPage of pages[] to be shown
             JButton newBut=new JButton("Level "+(i+1));
-            if(i==10){                                                  //the last button leads to a cutom level where player constructs their own bomb
+            if(i==10){                                                  //the last button leads to a custom level where player constructs their own bomb
                 newBut=new JButton("Custom");
             }
             newBut.addActionListener(this);                          //the size, text colour, and background colour of all buttons is constant
@@ -227,13 +226,13 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             levelBut[i]=newBut;
         }
 
-        for(int i=0;i<10;i++){                                          //Creating 10 BookPage Objects. These panels display information about a level.
+        for(int i=0;i<10;i++){                                          //Creating 10 BookPage Objects. These panels display information about a level, such as top score and how many modules there are.
             BookPage newPage=new BookPage(i+1,allBombs[i]);
             pages[i]=newPage;
-            completeBook.add(newPage,Integer.toString(i+1));         //the String assigned to each level is a number from 1 to 10, not an index
+            completeBook.add(newPage,Integer.toString(i+1));         //the String assigned to each level is a number from 1 to 10
         }
-        custom=new CustomPage(playBut,returnBut);
-        completeBook.add(custom,"11");   //adding the customizable level
+        custom=new CustomPage();                                        //creating the customizable page
+        completeBook.add(custom,"11");
 
         try{                                                            //loading sound effects for next page, return, and play buttons
             File pageFile=new File("page flip.wav");
@@ -245,8 +244,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             System.out.println("Can't find audio file");
         }
         unlockLevel(0);                                    //the first level is unlocked by default
-        unlockLevel(9);
-        showPage(displayedLevel);                                   //displaying the level indicated by displayedLevel
+        showPage(displayedLevel);                                   //displaying the level indicated by the parameter
         getContentPane().add(completeBook);
     }
     /*-----------------------------------------------------------------------------------------
@@ -255,9 +253,11 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
     public void unlockLevel(int pageIndex){
         pages[pageIndex].unlock();
     }
-    /*-------------------------------------------------------------
-    This method shows a specific page and adds buttons to the page
-     ------------------------------------------------------------*/
+    /*-----------------------------------------------------------------------------------------------------------------------------------------------
+    This method shows a specific page and adds buttons to the page.
+    From testing, it was found that buttons occasionally disappeared from panels, so solution was to add buttons whenever a page is about to be shown
+    Credit goes to Zulaikha, who suggested this solution to Keith.
+     -----------------------------------------------------------------------------------------------------------------------------------------------*/
     public void showPage(int pageIndex){
         currentPage=pages[pageIndex];
         if(pageIndex==0){                                                       //the first page is special because it lacks a previous button
@@ -269,11 +269,74 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         cLayout.show(completeBook,Integer.toString(pageIndex+1));
     }
     /*--------------------------------------------------------------------------------------
-     *This method starts the timer, causing the interface to be updated in actionPerformed()
+     This method starts the timer, causing the interface to be updated in actionPerformed().
+     It also makes the frame visible.
      *-------------------------------------------------------------------------------------*/
     public void start(){
         setVisible(true);
         myTimer.start();
+    }
+    /*-----------------------------------------------------------------------------
+     *This method changes the page that's shown whenever the player clicks a button
+     *----------------------------------------------------------------------------*/
+    public void actionPerformed(ActionEvent e){
+        Object source=e.getSource();
+        if(source==returnBut){				            //return button was clicked, so show the main menu
+            buttonSound.play();                         //playing a sound effect
+            setVisible(false);
+            new MainGame(this);
+        }
+        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){          //player has clicked play on a page that's unlocked, so start the game
+            buttonSound.play();                                                           //When user clicks "custom" button, currentPage will stay as page 10. That's ok because at this point, every level is unlocked.
+            setVisible(false);
+            if(creatingCustom && custom.getTotalNumMod()>0){                              //the player is making their own bomb, but it must have at least one module
+                GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
+                actualGame.start();
+            }
+            else {                                                                        //a normal level is being played
+                GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
+                actualGame.start();
+            }
+        }
+        if(source==myTimer){                        //updating the level page's graphics
+            if(creatingCustom){
+                custom.repaint();
+            }
+            else {
+                currentPage.repaint();
+            }
+        }
+        if(source==levelBut[10]){                   //player wants to go to customizable level page
+            creatingCustom=true;
+            custom.addButtons(levelBut[9],returnBut,playBut);
+            cLayout.show(completeBook,"11");
+        }
+        else{								        //detecting which level button was clicked and showing the corresponding level page
+            for(int i=0;i<10;i++){                  //the last button in levelBut[] is excluded because this loop only works for BookPage Objects, not CustomPage Objects
+                if(source==levelBut[i]){
+                    creatingCustom=false;
+                    pageSound.play();
+                    showPage(i);                    //adding necessary buttons and displaying the page
+                }
+            }
+        }
+    }
+    /*-------------------------------------------------------------------
+    This method makes button text white when mouse hovers over the button
+    -------------------------------------------------------------------*/
+    public void mouseEntered(MouseEvent e){
+        Object source=e.getSource();
+        if(source==playBut){
+            playBut.setForeground(Color.RED);
+        }
+        if(source==returnBut){
+            returnBut.setForeground(Color.RED);
+        }
+        for(JButton but:levelBut){
+            if(source==but){
+                but.setForeground(Color.RED);
+            }
+        }
     }
     /*-------------------------------------------------------------------------------
     This method makes the button text black when mouse isn't hovering over the buttons
@@ -292,68 +355,6 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             }
         }
     }
-    /*-------------------------------------------------------------------
-    This method makes button text white when mouse hovers over the button
-     -------------------------------------------------------------------*/
-    public void mouseEntered(MouseEvent e){
-        Object source=e.getSource();
-        if(source==playBut){
-            playBut.setForeground(Color.RED);
-        }
-        if(source==returnBut){
-            returnBut.setForeground(Color.RED);
-        }
-        for(JButton but:levelBut){
-            if(source==but){
-                but.setForeground(Color.RED);
-            }
-        }
-    }
-    /*-----------------------------------------------------------------------------
-     *This method changes the page that's shown whenever the player clicks a button
-     *----------------------------------------------------------------------------*/
-    public void actionPerformed(ActionEvent e){
-        Object source=e.getSource();
-        if(source==returnBut){				//the main menu is shown if the return to main menu button is clicked
-            buttonSound.play();
-            setVisible(false);
-            new MainGame(this);
-        }
-        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){       //When user clicks "custom" button, currentPage will stay as page 10. That's ok because once level 10 is done, the customizable level can be played.
-            buttonSound.play();
-            setVisible(false);
-            if(creatingCustom && custom.getTotalNumMod()>0){
-                GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
-                actualGame.start();
-            }
-            else {
-                GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
-                actualGame.start();
-            }
-        }
-        if(source==myTimer){                        //updating the level page's graphics
-            if(creatingCustom){
-                custom.repaint();
-            }
-            else {
-                currentPage.repaint();
-            }
-        }
-        if(source==levelBut[10]){                   //player wants to go to customizable level page
-            creatingCustom=true;
-            custom.addButtons(levelBut[9],returnBut,playBut);
-            cLayout.show(completeBook,"11");
-        }
-        else{								//detecting which level button is clicked and showing the corresponding level page
-            for(int i=0;i<10;i++){           //clicking the level 11 button is a special case because the custom page isn't a BookPage Object, and this loop only handles BookPages
-                if(source==levelBut[i]){    //From testing, it was found that buttons occasionally disappear from panels when clicking back and forth.
-                    creatingCustom=false;
-                    pageSound.play();
-                    showPage(i);            //Therefore, all the buttons must be added whenever a new page is displayed, which is what showPage does.
-                }
-            }
-        }
-    }
     /*-------------------------------------------------------------------------
     The following methods must be included in order to implement MouseListener
      -------------------------------------------------------------------------*/
@@ -363,63 +364,47 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
 }
 /*-------------------------------------------------------------------------------------------------------------------------------------------------
  This class makes a panel designated to the custom level. Players construct their own bomb by using arrow keys to specify which modules they want.
+ This is separate from the BookPage Objects because those Objects have Bombs designated to them in their constructors.
+ Here, a bomb is only created once the player has chosen all their modules and clicks play.
  -----------------------------------------------------------------------------------------------------------------------------------------------*/
 class CustomPage extends JPanel implements ActionListener{
-    public final int BUTTON=1;                          //Constants for clarity when dealing with modules
-    public final int WIRES=2;
-    public final int SYMBOLS=3;
-    public final int SIMON=4;
+    private String locked;                          //tells player if level can be played. String because paintComponent writes either "Locked" or "Unlocked" on the panel
+    private Image back;                             //background image
+    private int[] numMod;                           //an Array of length 4 where each element indicates how many modules of a specific type the bomb will have
+    private BasicArrowButton[] allButtons;          //the buttons which player uses to increase or decrease number of modules
+    private int totalNumMod;                        //Tracks the total number of modules on the bomb. It must be greater than 0 and less than 11.
 
-    private String locked;                              //String because paintComponent writes either "Locked" or "Unlocked" on the panel
-    private Image back;                                 //background image
-    private int[] numMod;                               //[num wires, num simon says, num buttons, num symbols]
-    private BasicArrowButton[] allButtons;     //[increase wires, decrease wires, increase simon says, decrease simon says, ...]
-    private int totalNumMod;                            //while customizing the bomb, the total number of modules can't exceed ten
-
-    /*----------------------------------------------------------
-     *Constructor where "level" is the level the page represents
-     *----------------------------------------------------------*/
-    public CustomPage(JButton play,JButton mainMenu){
+    /*---------------------------------------------------------------------------
+     *Constructor which creates all the buttons that alter the number of modules.
+     *--------------------------------------------------------------------------*/
+    public CustomPage(){
         setLayout(null);
         locked="Locked";
         totalNumMod=0;
         numMod=new int[4];
-        allButtons=new BasicArrowButton[8];              //Contains all the buttons that increase/decrease number of modules. ArrayList because the index of buttons needs to be found in actionPerformed
+        allButtons=new BasicArrowButton[8];                                         //buttons alternate between increasing and decreasing functions. For example, allButtons[0] increases number of wire modules, allButtons[1] decreases number of wires.
         back=new ImageIcon("images/game back.png").getImage();
 
-        for(int i=0;i<8;i++){                                                           //adding the 8 buttons
-            BasicArrowButton newBut=new BasicArrowButton(BasicArrowButton.NORTH);       //all the buttons that increase number of modules
-            if(i%2==1){                                                                   //all the buttons that decrease number of modules
+        for(int i=0;i<8;i++){                                                       //creating the 8 buttons
+            BasicArrowButton newBut=new BasicArrowButton(BasicArrowButton.NORTH);
+            if(i%2==1){                                                             //odd indices contain buttons that decrease number of modules
                 newBut=new BasicArrowButton(BasicArrowButton.SOUTH);
             }
             newBut.setBackground(new Color(255, 247, 152));
             newBut.setForeground(Color.black);
             newBut.setSize(50,35);
-            newBut.setLocation(600,90+35*i);                                        //buttons are added in a column
+            newBut.setLocation(600,90+35*i);
             newBut.addActionListener(this);
             allButtons[i]=newBut;
             add(newBut);
         }
-        add(play);
-        add(mainMenu);
     }
+    /*------------------------------------------------------------------------------------------------------------------
+    This method is used by SelectLevelPage once player has clicked "Play" to verify that the Bomb has at least 1 module.
+    This covers the case of the player reaching the custom page and immediately clicking play.
+     -------------------------------------------------------------------------------------------------------------------*/
     public int getTotalNumMod(){
         return totalNumMod;
-    }
-    public Bomb getBomb(){
-        int inputArrayLength=0;
-        for(int i:numMod){                          //sample numMod={3,2,3,1}
-            inputArrayLength+=i;
-        }
-        int[] inputArray=new int[inputArrayLength];
-        int index=0;
-        for(int i=0;i<4;i++){
-            for(int j=0;j<numMod[i];j++){
-                inputArray[index]=i+1;
-                index++;
-            }
-        }
-        return new Bomb("",0,inputArray);
     }
     /*------------------------------------------------------------------------------------
     This method is used by paintComponent() to tell player if level is locked or unlocked
@@ -433,45 +418,69 @@ class CustomPage extends JPanel implements ActionListener{
     public void unlock(){
         locked="Unlocked";
     }
+    /*------------------------------------------------------------------------------------------------------------------------
+    This method is used by SelectLevelPage to get the Bomb the player has made and start the actual game.
+    At this moment, the field numMod looks something like this: {3,2,3,1}. That means they want 3 wires, 2 buttons, and so on.
+    The Bomb constructor needs an int[] Array which contains numbers 1 to 4 because those will be interpreted as constants that
+    prompt the creation of specific modules. The input in the Bomb parameter must look like this: {1,1,1,2,2,3,3,3,4}.
+    This method creates the correct Array and uses it to create the Bomb the player designed.
+     ------------------------------------------------------------------------------------------------------------------------*/
+    public Bomb getBomb(){
+        int[] inputArray=new int[totalNumMod];          //the Array that will be passed into Bomb constructor must be large enough to house all the modules
+        int index=0;
+        for(int modType=0;modType<4;modType++){         //looking at the sample Array in the header comment, this loop will go through each element in numMod[] and add however many ones or twos are specified to inputArray[]
+            for(int j=0;j<numMod[modType];j++){
+                inputArray[index]=modType+1;            //must add 1 because modType values range from 0 to 3, but we want 1 to 4.
+                index++;                                //this advances through inputArray
+            }
+        }
+        return new Bomb(inputArray);
+    }
+    /*-----------------------------------------------------------------------------------------------------------------------
+    This method detects when player has clicked on an increase/decrease button and changes the number of modules accordingly
+     ----------------------------------------------------------------------------------------------------------------------*/
     public void actionPerformed(ActionEvent e){
         Object source=e.getSource();
-        for(int i=0;i<8;i++){
+        for(int i=0;i<8;i++){                                               //going through all the buttons until the source is found
             if(source==allButtons[i]){
-                if(i%2==0){
+                if(i%2==0){                                                 //user wants to increase number of modules
                     numMod[i/2]=determineNum(true,i/2);
                 }
-                else{
+                else{                                                       //user wants to decrease number of modules
                     numMod[i/2]=determineNum(false,i/2);
                 }
             }
         }
     }
-    /*---------------------------------------------------------------------------------------------
+    /*------------------------------------------------------------------------------------------------------------------------
     This method determines how many modules there are after user clicks an increase/decrease button.
-    It makes sure that the total number of modules doesn't exceed ten.
-     ----------------------------------------------------------------------------------------------*/
+    It makes sure that the total number of modules is greater than one and doesn't exceed ten.
+    "increase" indicates whether the player clicked an increase or decrease button.
+    "numModIndex" is an index of numMod[] which is used to update an element in the Array to reflect the new number of modules.
+     -------------------------------------------------------------------------------------------------------------------------*/
     public int determineNum(boolean increase,int numModIndex){
         if(increase){                               //player wants to increase the number of modules
-            if(totalNumMod+1<=10){     //if the module number can be increased without exceeding ten, increase the module number
+            if(totalNumMod+1<=10){                  //the module number only increases if it won't exceed ten
                 totalNumMod++;
                 return numMod[numModIndex]+1;
             }
         }
         if(!increase){                              //player wants to decrease the number of modules
-            if(totalNumMod-1>=1){       //there must be at least one module
+            if(totalNumMod-1>=1){                   //there must be at least one module
                 totalNumMod--;
                 return numMod[numModIndex]-1;
             }
         }
         return numMod[numModIndex];                 //the number of modules can't be changed, so the corresponding value in numMod doesn't change
     }
-    /*---------------------------------------------------------------------------------------------------------------------
-     *This method adds specific buttons to the page
-     *"prev" goes back a level, "next" advances a level,"returnBut" returns player to main menu, "playBut" starts the game
-     *Called in SelectLevelPage actionPerformed() whenever the displayed panel changes
-     *--------------------------------------------------------------------------------------------------------------------*/
+    /*-------------------------------------------------------------------------------------------------------
+     This method adds specific buttons to the page when it is displayed to make sure buttons don't disappear.
+     "prev" goes back a level, "returnBut" returns player to main menu, "playBut" starts the game.
+     Called in SelectLevelPage actionPerformed() whenever the custom page is displayed.
+     The detection of when these buttons are clicked and the consequent processes are handled by SelectLevelPage.
+     *---------------------------------------------------------------------------------------------------------*/
     public void addButtons(JButton prev,JButton returnBut,JButton playBut){
-        if(!isAncestorOf(returnBut)){			//the buttons are added only if the JPanel doesn't already have the button
+        if(!isAncestorOf(returnBut)){			//The buttons are added only if the JPanel doesn't already have the button. Credit to Zulaikha who told Keith he must check this.
             add(returnBut);
         }
         if(!isAncestorOf(playBut)){
@@ -482,25 +491,25 @@ class CustomPage extends JPanel implements ActionListener{
             add(prev);
         }
     }
-    /*----------------------------------------------------------------------------------------------------------------------------
-     This method is used to display information about the bomb for a level: time required to complete, modules, current best time
-     Since bombs are randomly created every time the program is run, we need a general method of displaying information,
-     rather than blitting a picture that contains information about the bomb on each page of the book.
-     *---------------------------------------------------------------------------------------------------------------------------*/
+    /*----------------------------------------------------------------------------
+     This method is used to display how many modules the player has chosen so far
+     *--------------------------------------------------------------------------*/
     @Override
     public void paintComponent(Graphics g) {
-        g.drawImage(back, 0, 0, this);
+        g.drawImage(back, 0, 0, this);              //adding background image and a yellow rectangle that resembles paper
         g.setColor(new Color(255, 247, 152));
         g.fillRect(150, 0, 500, getHeight());
 
-        g.setColor(new Color(0, 0, 0));
+        g.setColor(new Color(0, 0, 0));                  //drawing lines so the yellow rectangle looks like lined paper
         for (int y = 90; y < 550; y += 70) {
             g.drawLine(150, y, 650, y);
         }
-        g.setFont(new Font("Special Elite", Font.BOLD, 50));
-        g.drawString("Custom", 300, 70);                   //displaying level number
+        g.setFont(new Font("Special Elite", Font.BOLD, 40));
+        g.drawString("Custom", 320, 50);
+        g.setFont(new Font("Special Elite", Font.PLAIN, 30));
+        g.drawString("Max total of 10 modules",220,80);
 
-        g.setFont(new Font("Special Elite", Font.PLAIN, 35));
+        g.setFont(new Font("Special Elite", Font.PLAIN, 35));   //displaying number of modules
         g.drawString("Buttons: "+numMod[0], 310, 140);
         g.drawString("Wires: "+numMod[1], 320, 210);
         g.drawString("Symbols: "+numMod[2], 300, 280);
@@ -513,11 +522,6 @@ class CustomPage extends JPanel implements ActionListener{
  *Custom Objects are required because every page has different buttons. These Objects facilitate the process of adding unique buttons.
  *---------------------------------------------------------------------------------------------------------------------------------*/
 class BookPage extends JPanel{
-    public final int BUTTON=1;           //Constants for clarity when dealing with modules
-    public final int WIRES=2;
-    public final int SYMBOLS=3;
-    public final int SIMON=4;
-
     private int pageNum;				//the level that the page represents (1 to 10)
     private Bomb bomb;                  //the bomb that's played for a specific level
     private String locked;              //String because paintComponent writes either "Locked" or "Unlocked" on the panel
@@ -751,8 +755,6 @@ The Bomb detects when the player clicks on a module, and then tells the module t
 The Bomb also tells all its modules to draw themselves using methods in Modules class.
  ----------------------------------------------------------------------------------------------------*/
 class Bomb extends JPanel implements MouseListener{
-    private String serial;                  //Serial code used for more complex defusing rules
-    private int numBat;                     //number of batteries for same purpose as above
     private int numMod;                     //the number of modules on this bomb
     private Modules[][] minigames;          //2D Array that contains the modules located on front and back of the Bomb
     private int face;                       //Controls which side of the Bomb is shown. 0 for the front, 1 for the back.
@@ -768,12 +770,9 @@ class Bomb extends JPanel implements MouseListener{
     "serial" is a serial code, "bat" is number of batteries
     "modTypes" contains numbers from 1-4 that're interpreted as constants when a Modules Object is created
     ------------------------------------------------------------------------------------------------------*/
-    public Bomb(String serialCode,int bat,int[] modTypes){
+    public Bomb(int[] modTypes){
         addMouseListener(this);
         System.out.println(Arrays.toString(modTypes));
-        allModules=modTypes;
-        serial=serialCode;
-        numBat=bat;
         defused=false;
         bestTime=0;
         numMod=modTypes.length;
