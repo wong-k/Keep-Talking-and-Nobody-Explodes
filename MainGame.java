@@ -519,19 +519,20 @@ class CustomPage extends JPanel implements ActionListener{
     }
 }
 /*---------------------------------------------------------------------------------------------------------------------------------
- *This class makes a panel designated to a specific level. The 10 level pages are created in SelectLevelPage constructor.
- *Custom Objects are required because every page has different buttons. These Objects facilitate the process of adding unique buttons.
+ This class makes a panel designated to a specific level. The ten level pages are created in SelectLevelPage constructor.
+ Custom Objects are required because every page has different buttons. These Objects facilitate the process of adding unique buttons.
  *---------------------------------------------------------------------------------------------------------------------------------*/
 class BookPage extends JPanel{
     private int pageNum;				//the level that the page represents (1 to 10)
     private Bomb bomb;                  //the bomb that's played for a specific level
     private String locked;              //String because paintComponent writes either "Locked" or "Unlocked" on the panel
-    private Image back;
-    private int[] modFrequency;         //number of wires, simon says, button, and symbols modules
+    private Image back;                 //background image
+    private int[] modFrequency;         //contains number of wires, simon says, button, and symbols modules
 
-    /*---------------------------------------------------------------------------------------
-     *Constructor where "level" is a number from 1 to 10. It's the level the page represents
-     *--------------------------------------------------------------------------------------*/
+    /*---------------------------------------------------------------------------------
+     Constructor where "level" is the level the page represents (a number from 1 to 10.
+     "inputBomb" is the bomb assigned to the level.
+     *-------------------------------------------------------------------------------*/
     public BookPage(int level,Bomb inputBomb){
         pageNum=level;
         setLayout(null);
@@ -564,7 +565,8 @@ class BookPage extends JPanel{
         return locked;
     }
     /*--------------------------------------------------------------------------
-    Once a level is unlocked, this method updates the interface to reflect that
+    Once a level is unlocked, this method updates the interface to reflect that.
+    Called whenever user defuses a bomb.
      -------------------------------------------------------------------------*/
     public void unlock(){
         locked="Unlocked";
@@ -577,10 +579,10 @@ class BookPage extends JPanel{
         return bomb;
     }
     /*---------------------------------------------------------------------------------------------------------------------
-     *This method adds specific buttons to the page
-     *"prev" goes back a level, "next" advances a level,"returnBut" returns player to main menu, "playBut" starts the game
-     *Called in SelectLevelPage actionPerformed() whenever the displayed panel changes
-     *--------------------------------------------------------------------------------------------------------------------*/
+     This method adds specific buttons to the page
+     "prev" goes back a level, "next" advances a level,"returnBut" returns player to main menu, "playBut" starts the game
+     Called in SelectLevelPage actionPerformed() whenever the displayed panel changes
+     --------------------------------------------------------------------------------------------------------------------*/
     public void addButtons(JButton prev,JButton next,JButton returnBut,JButton playBut){
         if(!isAncestorOf(returnBut)){			//the buttons are added only if the JPanel doesn't already have the button
             add(returnBut);
@@ -588,7 +590,7 @@ class BookPage extends JPanel{
         if(!isAncestorOf(playBut)){
             add(playBut);
         }
-        if(prev!=null){									//the first level page lacks a previous button, so this avoids a null pointer exception
+        if(prev!=null){							//the first level page lacks a previous button, so this avoids a null pointer exception
             if(!isAncestorOf(prev)){
                 prev.setLocation(150,510);
                 add(prev);
@@ -599,15 +601,15 @@ class BookPage extends JPanel{
             add(next);
         }
     }
-    /*----------------------------------------------------------------------------------------------------------------------------
-     This method is used to display information about the bomb for a level: time required to complete, modules, current best time
+    /*-------------------------------------------------------------------------------------------------------------------
+     This method displays information about the bomb for a level: number of modules and current best time
      Since bombs are randomly created every time the program is run, we need a general method of displaying information,
      rather than blitting a picture that contains information about the bomb on each page of the book.
-     *---------------------------------------------------------------------------------------------------------------------------*/
+     *-------------------------------------------------------------------------------------------------------------------*/
     @Override
     public void paintComponent(Graphics g) {
         g.drawImage(back, 0, 0, this);
-        g.setColor(new Color(255, 247, 152));
+        g.setColor(new Color(255, 247, 152));                       //drawing a yellow "sticky note" on the panel
         g.fillRect(150, 0, 500, getHeight());
 
         g.setColor(new Color(0, 0, 0));
@@ -619,10 +621,10 @@ class BookPage extends JPanel{
         g.drawString("Level " + pageNum, 300, 70);                   //displaying level number
 
         g.setFont(new Font("Special Elite", Font.PLAIN, 35));
-        g.drawString("Buttons: 10", 310, 140);              //replace "10" with +numWires and so on
-        g.drawString("Wires: 10", 320, 210);
-        g.drawString("Symbols: 10", 300, 280);
-        g.drawString("Simon says: 10", 280, 350);
+        g.drawString("Buttons: 10", 310, 140);              //replace "10" with +numMod[0] and so on
+        g.drawString("Wires: 10", 320, 210);                //modFrequency[1]
+        g.drawString("Symbols: 10", 300, 280);              //modFrequency[2]
+        g.drawString("Simon says: 10", 280, 350);           //modFrequency[3]
         g.drawString("Status: " + locked, 260, 420);
         if (bomb != null) {
             g.drawString("Best score: " + bomb.getHighScore(), 250, 490);
@@ -630,21 +632,24 @@ class BookPage extends JPanel{
     }
 }
 
-/*----------------------------------------------------------------
-This class controls the gameplay by displaying and updating a Bomb
- -----------------------------------------------------------------*/
+/*-------------------------------------------------------------------------------------
+This class controls the gameplay by displaying and updating a Bomb.
+It also prompts the creation of a game over frame once the bomb explodes or is defused.
+ -------------------------------------------------------------------------------------*/
 class GameFrame extends JFrame implements ActionListener,MouseListener{
     private Timer myTimer;                      //controls when the bomb is updated
-    private int levelIndex;
-    private Bomb bomb;
-    private SelectLevelPage selectLevel;
+    private int levelIndex;                     //an index from 0 to 9 which controls which level is unlocked once a bomb is defused
+    private Bomb bomb;                          //the bomb being played
+    private SelectLevelPage selectLevel;        //once a bomb is defused, this Object is used to unlock the next level
     private JButton flipBut;                    //controls which side of the Bomb is displayed
-    private Clip bgMusic;                  //background music
-    /*--------------------------------------------------------------
+    private Clip bgMusic;                       //background music
+    /*---------------------------------------------------------------------------------------------------
     Constructor which makes the frame
     "thisBomb" is the Bomb that belongs to the level being played
-    "index" is an index of BookPages. index+1 is the level (1 to 10)
-     ---------------------------------------------------------------*/
+    "index" is an index of BookPages (0 to 9).
+    "levelPage" is a SelectLevelPage Object. Necessary because from here, GameOverFrame is made.
+    From GameOverMade, main menu can be accessed, and main menu constructor needs a SelectLevelPage Object.
+     -----------------------------------------------------------------------------------------------------*/
     public GameFrame(Bomb thisBomb, int index,SelectLevelPage levelPage){
         super("Game Screen");
         setSize(800,600);
@@ -656,9 +661,9 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         bomb=thisBomb;
         JLayeredPane thisFrame=new JLayeredPane();
         thisFrame.setLayout(null);
-        bomb.setBounds(0,0,800,600);                        //necessary because I want to add the Bomb (which is a JPanel) and flipBut at specific locations
+        bomb.setBounds(0,0,800,600);          //necessary because the Bomb (which is a JPanel) and flipBut are added at specific locations
 
-        flipBut=new JButton("Flip");
+        flipBut=new JButton("Flip");                        //making a button that changes the displayed side of the Bomb
         flipBut.setSize(100,100);
         flipBut.setLocation(700,0);
         flipBut.addActionListener(this);
@@ -672,10 +677,10 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         thisFrame.add(bomb,JLayeredPane.DEFAULT_LAYER);
         thisFrame.add(flipBut,JLayeredPane.DRAG_LAYER);
         add(thisFrame);
-        try{													//instructions for implementing music were found at: https://www.ntu.edu.sg/home/ehchua/programming/java/J8c_PlayingSound.html
+        try{													            //instructions for implementing music were found at: https://www.ntu.edu.sg/home/ehchua/programming/java/J8c_PlayingSound.html
             File musicFile=new File("background music.aiff");		//reading the music file
             AudioInputStream audioInput=AudioSystem.getAudioInputStream(musicFile);
-            bgMusic=AudioSystem.getClip();							//using Clip's methods, music can be started and stopped
+            bgMusic=AudioSystem.getClip();							        //using Clip's methods, music can be started and stopped
             bgMusic.open(audioInput);
         }
         catch(IOException ex){
@@ -698,9 +703,9 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         bgMusic.loop(Clip.LOOP_CONTINUOUSLY);
         myTimer.start();
     }
-    /*------------------------------------------------------------------------------------------
-    This method updates the game whenever myTimer fires, and stops the game once the time is up
-     ------------------------------------------------------------------------------------------*/
+    /*------------------------------------------------------------------------------------------------------------------------------------------------------------
+    This method updates the game whenever myTimer fires, creates a GameOverFrame when the game is done, and changes displayed side of Bomb when flipBut is clicked.
+     -------------------------------------------------------------------------------------------------------------------------------------------------------------*/
     public void actionPerformed(ActionEvent evt){
         Object source=evt.getSource();
         if(source==myTimer){
@@ -714,9 +719,9 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             myTimer.stop();
             bgMusic.stop();
             setVisible(false);
-            if(bomb.isDefused()){
-                selectLevel.unlockLevel(Math.min(levelIndex+1,9));                 //Unlocking the next level for the player. This will still get called when user completes custom level, so capping the argument at 9 prevents an index our of bounds error.
-                                                                                    //but since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
+            if(bomb.isDefused()){                                                   //the player won the level
+                selectLevel.unlockLevel(Math.min(levelIndex+1,9));                  //Unlocking the next level for the player. This will still get called when user completes custom level, so capping the argument at 9 prevents an index our of bounds error.
+                                                                                    //Since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
                 new GameOverFrame(bomb,levelIndex,selectLevel,bomb.getScore());
             }
             else{                                                                   //the player failed the level
@@ -725,9 +730,9 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             bomb.reset();                                                           //this enables the bomb to be played again
         }
     }
-    /*-------------------------------------------------------------------
-    This method makes button text red when mouse hovers over the flip button
-    -------------------------------------------------------------------*/
+    /*-----------------------------------------------------------------------
+    This method makes button text red when mouse hovers over the flip button.
+    ------------------------------------------------------------------------*/
     public void mouseEntered(MouseEvent e){
         Object source=e.getSource();
         if(source==flipBut){
@@ -735,8 +740,8 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
         }
     }
     /*---------------------------------------------------------------------------
-    This method makes button text white when mouse isn't hovering over the button
-    ----------------------------------------------------------------------------*/
+    This method makes button text white when mouse isn't hovering over the button.
+    ------------------------------------------------------------------------------*/
     public void mouseExited(MouseEvent e){
         Object source=e.getSource();
         if(source==flipBut){
@@ -752,27 +757,26 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
 }
 /*---------------------------------------------------------------------------------------------------
 This class makes a Bomb Object which has an Array of Modules as an attribute.
-The Bomb detects when the player clicks on a module, and then tells the module to handle interactions.
+The Bomb detects when the player clicks on a module and then tells the module to handle interactions.
 The Bomb also tells all its modules to draw themselves using methods in Modules class.
+When the game is over, the Bomb tells all its modules to reset themselves.
  ----------------------------------------------------------------------------------------------------*/
 class Bomb extends JPanel implements MouseListener{
     private int numMod;                     //the number of modules on this bomb
     private Modules[][] minigames;          //2D Array that contains the modules located on front and back of the Bomb
     private int face;                       //Controls which side of the Bomb is shown. 0 for the front, 1 for the back.
-    private int mouseX,mouseY,strikes;      //mouseX and mouseY are the mouse coordinates. strikes is how many mistakes the player has made. The game ends if strikes==3
+    private int mouseX,mouseY,strikes;      //mouseX and mouseY are the mouse coordinates. strikes is how many mistakes the player has made.
     private Modules currentInteract;        //the module that is being interacted with right now
-    private int[] allModules;
-    private Image back,strikePic;
+    private Image back,strikePic;           //images for background, and an X for strikes
     private TimeModule timer;               //displays the time left to defuse the bomb
-    private boolean defused;
+    private boolean defused;                //tells GameFrame whether or not the Bomb is defused
     private int bestTime;                   //the lowest time it took the player to complete the level
     /*-----------------------------------------------------------------------------------------------------
-    This is the constructor of the bomb
-    "modTypes" contains numbers from 1-4 that're interpreted as constants when a Modules Object is created
+    Constructor which makes all the Modules for the Bomb.
+    "modTypes" contains numbers from 1 to 4 that're interpreted as constants when a Modules Object is created.
     ------------------------------------------------------------------------------------------------------*/
     public Bomb(int[] modTypes){
         addMouseListener(this);
-        System.out.println(Arrays.toString(modTypes));
         defused=false;
         bestTime=0;
         numMod=modTypes.length;
@@ -781,7 +785,7 @@ class Bomb extends JPanel implements MouseListener{
         face=strikes=0;                                                                   //the front of the bomb is shown by default
         int[][] cornerCoord={{100,100},{100,300},{300,100},{500,100},{500,300}};          //each module box is drawn as a rectangle, so these are the rectangles' coordinates
 
-        if(numMod>5){                                           //If there are more than 5 modules including the countdown
+        if(numMod>5){                                           //A maximum of 5 modules can fit on one side of the Bomb. In this case, modules need to be assigned to the back of the Bomb
             minigames=new Modules[5][2];                        //Each element has two spots: the first one contains a module on the front of the bomb, the second one is for the back
         }
         else {
@@ -840,12 +844,6 @@ class Bomb extends JPanel implements MouseListener{
      ---------------------------------------------------------------------*/
     public String getHighScore(){
         return convertTime(bestTime);
-    }
-    /*----------------------------------------------------------------------------------
-    This method returns the Array of Integer constants that represent the Bomb's modules
-     ----------------------------------------------------------------------------------*/
-    public int[] getModules(){
-        return allModules;
     }
     /*---------------------------------------------------
     Used by GameFrame to see if the bomb has been defused
