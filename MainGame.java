@@ -287,17 +287,17 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             setVisible(false);
             new MainGame(this);
         }
-        if(source==playBut){          //player has clicked play on a page that's unlocked, so start the game
-            buttonSound.play();                                                           //When user clicks "custom" button, currentPage will stay as page 10. That's ok because at this point, every level is unlocked.
+        if(source==playBut && creatingCustom && custom.getTotalNumMod()>0 ){         //player has clicked play on the custom page and they have a valid bomb
+            buttonSound.play();
             setVisible(false);
-            if(creatingCustom && custom.getTotalNumMod()>0){                              //the player is making their own bomb, but it must have at least one module
-                GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
-                actualGame.start();
-            }
-            else if(currentPage.getLockedStatus().equals("Unlocked")) {                                                                        //a normal level is being played
-                GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
-                actualGame.start();
-            }
+            GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
+            actualGame.start();
+        }
+        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){       //player has clicked play on a normal level page that's unlocked, so start the game
+            buttonSound.play();
+            setVisible(false);
+            GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
+            actualGame.start();
         }
         if(source==myTimer){                        //updating the level page's graphics
             if(creatingCustom){
@@ -542,7 +542,7 @@ class BookPage extends JPanel{
         modFrequency=new int[4];                                                //{num buttons, num wires, num simon says, num symbols}
 
         int[] allModules=bomb.getModules();                                     //contains a series of numbers ranging from 1 to 4 that represent the modules
-        System.out.println(Arrays.toString(allModules));                        //the frequency of these numbers must be found in order for BookPage to display how many modules there are
+                                                                                //the frequency of these numbers must be found in order for BookPage to display how many modules there are
         HashMap<Integer,Integer> numFrequency=new HashMap<Integer,Integer>();   //the first value is the integer, the second value is its frequency
         for(int i:allModules){
             if(!numFrequency.containsKey(i)){                                   //if this value is unique, put it in the map with a frequency of 1
@@ -558,7 +558,6 @@ class BookPage extends JPanel{
             int frequency=numPair.getValue();                                   //how many of that module is in the bomb
             modFrequency[moduleType-1]=frequency;
         }
-        System.out.println(Arrays.toString(modFrequency));
     }
     /*------------------------------------------------------------------------------------
     This method is used by paintComponent() to tell player if level is locked or unlocked
@@ -1176,10 +1175,10 @@ class Modules {
         }
         return defused;
     }
-    /*---------------------------------------------------------------------
+    /*----------------------------------------------------------------------------------------------
     This method is used by the Bomb class to update how many strikes are on the bomb.
-    Strikes is then passed in through simon's interract function to use the proper pattern inverter.
-     ---------------------------------------------------------------------*/
+    Strikes is then passed in through simon's interact function to use the proper pattern inverter.
+     ---------------------------------------------------------------------------------------------*/
     public void updateStrikes(int strikes){
         this.strikes=strikes;
     }
