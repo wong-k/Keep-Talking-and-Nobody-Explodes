@@ -95,7 +95,7 @@ public class MainGame extends JFrame implements ActionListener,MouseListener {
         }
         else if(source==infoBut){			//when instructions button is clicked, html manual is opened
             try{                            //instructional code found at: https://stackoverflow.com/questions/20517434/how-to-open-html-file-using-java
-                File htmlFile=new File("sample.html");
+                File htmlFile=new File("bombmanual.html");
                 Desktop.getDesktop().browse(htmlFile.toURI());
             }
             catch(IOException e){
@@ -230,6 +230,9 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             BookPage newPage=new BookPage(i+1,allBombs[i]);
             pages[i]=newPage;
             completeBook.add(newPage,Integer.toString(i+1));         //the String assigned to each level is a number from 1 to 10
+        }
+        for(BookPage page:pages){
+            page.unlock();
         }
         custom=new CustomPage();                                        //creating the customizable page
         completeBook.add(custom,"11");
@@ -732,7 +735,6 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             bgMusic.stop();
             setVisible(false);
             if(bomb.isDefused()){                                                   //the player won the level
-                selectLevel.unlockLevel(Math.min(levelIndex+1,9));                  //Unlocking the next level for the player. This will still get called when user completes custom level, so capping the argument at 9 prevents an index our of bounds error.
                                                                                     //Since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
                 new GameOverFrame(bomb,levelIndex,selectLevel,bomb.getScore());
             }

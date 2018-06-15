@@ -129,6 +129,7 @@ public class Button implements ActionListener,MouseListener {
         }
         g.fillOval((int)(defu.getX()),(int)(defu.getY()),10,10);
     }
+    /*ActionPerformed method used for when the timer fires and increases the amount of time the button is being pressed*/
     public void actionPerformed(ActionEvent e){
         tickcount+=1;
     }
