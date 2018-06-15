@@ -32,7 +32,7 @@ public class Symbols{
     private static Image symbol26=new ImageIcon("images/KTANESymbol26.png").getImage();
     private static Image symbol27=new ImageIcon("images/KTANESymbol27.png").getImage();
     private Ellipse2D defu; //This is the indicator in the top right of the module showing whether it's defused or not
-    private Rectangle[] symbols; //4 symbol rectangles in the middle of the module.
+    private ArrayList<Rectangle>symbols; //4 symbol rectangles in the middle of the module.
     private Image[][]images={{symbol1,symbol2,symbol3,symbol4,symbol5,symbol6,symbol7}, //2D ArrayList for the options of symbols to be used
                              {symbol8,symbol1,symbol7,symbol9,symbol10,symbol6,symbol11},
                              {symbol12,symbol13,symbol9,symbol14,symbol15,symbol3,symbol10},
@@ -48,26 +48,27 @@ public class Symbols{
     /*Constructor*/
     public Symbols(int x,int y){
         int[]order={0,1,2,3,4,5,6}; //Order is used when deciding which symbols to select
-        time=50;
+        time=50000;
         symbol=new Rectangle(x,y,200,200); //Constructing the modules rectangle
-        symbols=new Rectangle[4]; //The 4 rectangles for each of the symbols
+        symbols=new ArrayList<Rectangle>(); //The 4 rectangles for each of the symbols
         Random ran=new Random(); //Random generator for randomly choosing the line of symbols and which symbols
         options=images[ran.nextInt(6)]; //Picking our line of symbols
         right=new TreeSet<Integer>();//Initialized right order of selecting symbols
         undo=new TreeSet<Integer>(); //The undo treeset for resetting
         selected=new ArrayList<Integer>(); //ArrayList for choosing our symbols
         while(selected.size()<4){//Randomly selects symbols from order to be the ones we're using
-            selected.add(ran.nextInt(order.length));
+            int select=ran.nextInt(order.length);
+            if(selected.indexOf(select)<0){
+                selected.add(select);
+            }
         }
-        while(right.size()<4){
-            for(int j=0;j<order.length;j++){
-                if(selected.indexOf(order[j])>0 && !right.contains(order[j])){//We add the symbol to the treeset if it's includded in our selected symbols
-                    right.add(order[j]);
-                }
+        for(int j=0;j<order.length;j++){
+            if(selected.indexOf(order[j])>=0){//We add the symbol to the treeset if it's includded in our selected symbols
+                right.add(order[j]);
             }
         }
         for(int i=0;i<4;i++){ //Making all our rectngles for each symbol
-            symbols[i]=new Rectangle(symbol.x+25+76*(i-1<=0 ? 0:1),symbol.y+25+76*(i%2),75,75);//Need (x+25,y+25,75,75),(x+101,y+25,75,75),(x+25,y+101,75,75),(x+101,+101
+            symbols.add(new Rectangle(symbol.x+25+76*(i-1<=0 ? 0:1),symbol.y+25+76*(i%2),75,75));
         }
         defu=new Ellipse2D.Double(symbol.getX()+180.0,symbol.getY()+10.0,10.0,10.0);
     }
@@ -77,18 +78,27 @@ public class Symbols{
     *Returns a boolean so that if they make a mistake, we can return false in the main and display the mistake.
     -----------------------------------*/
     public boolean interact(int mousex,int mousey){
-        for (int i = 0; i < 4; i++) { //We check for each symbol having been pressed
-            if (symbols[i].contains(mousex, mousey)) {
-                if (right.first()==selected.get(i)) { //We check to see that the symbol pressed is the right one
+        Rectangle select=null;
+        for (Rectangle sym:symbols) { //We check for each symbol having been pressed
+            if (sym.contains(mousex, mousey)) {
+                select=sym;
+            }
+        } //If the symbol being pressed is not the correct one, we return false
+        if(select!=null){
+            if (right.size() > 0){
+                if(right.first().equals(selected.get(symbols.indexOf(select)))) { //We check to see that the symbol pressed is the right one
                     undo.add(right.pollFirst()); //We add that symbol to our undo list
-                    if (right.first()==null) { //Once they've clicked on all the symbols, the module is defused
+                    if (right.size()==0) { //Once they've clicked on all the symbols, the module is defused
                         defused = true;
                         return true;
                     }
                     return true;
                 }
             }
-        } //If the symbol being pressed is not the correct one, we return false
+        }
+        if(select==null || !right.contains(symbols.indexOf(select))){
+            return true;
+        }
         return false;
     }
     /*-Allotted time method used to help determine the total amount of time needed for the bomb-*/
@@ -106,13 +116,13 @@ public class Symbols{
     /*-Draw method to draw the module and each of its components-*/
     public void draw(Graphics g){
         //This is an Array of indicators put above the symbols to show whether they've been pressed correctly or not
-        Rectangle[]indicator={new Rectangle((int)(symbols[0].getX())+10,(int)(symbols[0].getY())+3,55,5),new Rectangle((int)(symbols[0].getX())+10,(int)(symbols[0].getY())+80,55,10),new Rectangle((int)(symbols[0].getX())+85,(int)(symbols[0].getY())+5,55,10),new Rectangle((int)(symbols[0].getX())+85,(int)(symbols[0].getY())+80,55,10)};
+        Rectangle[]indicator={new Rectangle((int)(symbols.get(0).getX())+10,(int)(symbols.get(0).getY())+3,55,5),new Rectangle((int)(symbols.get(0).getX())+10,(int)(symbols.get(0).getY())+80,55,10),new Rectangle((int)(symbols.get(0).getX())+85,(int)(symbols.get(0).getY())+5,55,10),new Rectangle((int)(symbols.get(0).getX())+85,(int)(symbols.get(0).getY())+80,55,10)};
         int coloured=4-right.size(); //This is used to determine which indicators will be coloured green
         g.setColor(new Color(246,231,206));
         //Drawing the rectangles and symbols
         for(int i=0;i<4;i++) {
-            g.fillRect((int)(symbols[i].getX()),(int)(symbols[i].getY()),(int)(symbols[i].getWidth()),(int)(symbols[i].getHeight()));
-            g.drawImage(options[selected.get(i)],(int)(symbols[i].getX())+5,(int)(symbols[i].getY())+5,null);
+            g.fillRect((int)(symbols.get(i).getX()),(int)(symbols.get(i).getY()),(int)(symbols.get(i).getWidth()),(int)(symbols.get(i).getHeight()));
+            g.drawImage(options[selected.get(i)],(int)(symbols.get(i).getX())+5,(int)(symbols.get(i).getY())+5,null);
         }
         //This is all done to colour the indicators the proper colour
         for(int i=0;i<2;i++){

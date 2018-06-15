@@ -24,16 +24,17 @@ public class Button implements ActionListener,MouseListener {//We use actionlist
     private String[]words={"Press","Hold","Click","Button"}; //Choice of strings to be displayed
     /*Constructor*/
     public Button(int x,int y){
+        buttonheld=false;
         ran=new Random();
-        time=20;
+        time=20000;
         colour=new int[3];
         stripped=Color.BLACK; //Auto setting the strip to be black
         button=new Rectangle(x,y,200,200); //Module rectangle
         int select=ran.nextInt(4); //Select is used to determine which of the strings is being chosen and adding the time
         tdefuse+=select;
         word=words[select];
-        strip=new Rectangle((int)(button.getX())+150,(int)(button.getY()),20,100);
-        circle=new Ellipse2D.Double(button.getX()+50.0,button.getY()+50.0,100.0,100.0);
+        strip=new Rectangle((int)(button.getX())+150,(int)(button.getY()),20,60); //Y+(n/tdefuse), n/tdefuse where n time held down
+        circle=new Ellipse2D.Double(button.getX()+25.0,button.getY()+35.0,150.0,150.0);
         myTimer=new Timer(1000,this);
         defu=new Ellipse2D.Double(button.getX()+180.0,button.getY()+10.0,10.0,10.0);
         select=ran.nextInt(4); //Select being used to choose the oclour of the button
@@ -50,23 +51,35 @@ public class Button implements ActionListener,MouseListener {//We use actionlist
     *Uses the mouse coordinates to know if the button is being pressed
     *Returns a boolean so that if they make a mistake, we can return false in the main and display the mistake.
     -----------------------------------*/
-    public boolean interact(int x,int y){
+    public boolean interact(int x,int y){ //This isnt even responding right now
+        Ellipse2D selected=null;
         if(circle.contains(new Point2D.Double((double)(x),(double)(y)))){
-            if(pressed==0){//If this is the first time the button has been pressed, we mark that and we determine the strip colour
-                if(tdefuse>=4) {
-                    int select = ran.nextInt(4);
-                    tdefuse -= select;
-                    stripped = strips[ran.nextInt(4)];
+            selected=circle;
+        }
+        if(selected!=null) {
+            buttonheld = !buttonheld;
+            if (pressed == 0) {//If this is the first time the button has been pressed, we mark that and we determine the strip colour
+                if (tdefuse == 0) {
+                    tdefuse = 1;
                 }
-                pressed+=1;
+                int select = ran.nextInt(4);
+                stripped = strips[select];
+                pressed += 1; //Randomly selecting a colour for the script and showing that we've pressed the button
             }
-            if(!myTimer.isRunning()) {
+            if (!myTimer.isRunning()) { //Starting the timer when needed
                 myTimer.start();
+            }
+            if (tickcount > tdefuse) { //If the tickcount is greater than the defused time, it's a strike
+                tickcount = 0;
+                return false;
+            }
+            if (!buttonheld && tickcount == tdefuse && pressed == 1) { //We check if the button is not being held and that we have held the button down long enough and that its been pressed
+                defused = true; //If the button is no longer be held and we've held the button for long enough and we've pressed the button
+                return true;
             }
             return true;
         }
-        if(!buttonheld && tickcount==tdefuse && pressed==1){ //We check if the button is not being held and that we have held the button down long enough and that its been pressed
-            defused=true;
+        if(selected==null) {
             return true;
         }
         return false;
@@ -82,16 +95,17 @@ public class Button implements ActionListener,MouseListener {//We use actionlist
     /*-Draw method to draw the module and each of its components-*/
     public void draw(Graphics g){
         g.setColor(new Color(colour[0],colour[1],colour[2]));
-        g.fillOval((int)(circle.getX()),(int)(circle.getY()),100,100);
-        g.setColor(Color.WHITE);
-        g.drawString(word,(int)(circle.getX())+50,(int)(circle.getY())+50);
+        g.fillOval((int)(circle.getX()),(int)(circle.getY()),150,150);
         g.setColor(Color.BLACK);
-        g.fillRect((int)(strip.getX()),(int)(strip.getY()),20,50);
+        g.setFont(new Font("TimesRoman", Font.PLAIN, 40));
+        g.drawString(word,(int)(circle.getX()+20),(int)(circle.getY())+60);
+        g.setColor(Color.BLACK);
+        g.fillRect((int)(strip.getX()),(int)(strip.getY()),20,60);
         if(buttonheld){ //If the button is clicked we show it and we show the strip
             g.setColor(Color.YELLOW);
-            g.drawOval((int)(circle.getX()),(int)(circle.getY()),100,100);
+            g.drawOval((int)(circle.getX()),(int)(circle.getY()),152,152);
             g.setColor(stripped);
-            g.fillRect((int)(strip.getX()),(int)(strip.getY()),20,50);
+            g.fillRect((int)(strip.getX()),(int)(strip.getY()),20,(60*tickcount/tdefuse));
         }
         g.setColor(Color.RED);
         if(defused) {
@@ -103,13 +117,14 @@ public class Button implements ActionListener,MouseListener {//We use actionlist
         tickcount+=1;
     }
     public void mouseReleased(MouseEvent e) { //This is used to help determine when the button is let go to check if it was held for the right amount of time
-        buttonheld=false;
+        mouseX=e.getX();
+        mouseY=e.getY();
         interact(mouseX,mouseY);
     }
     public void mousePressed(MouseEvent e) {
-        buttonheld=true;
         mouseX=e.getX();
         mouseY=e.getY();
+        interact(mouseX,mouseY);
     }
     /*-------------------------------------------------------------------------
     The following methods must be included in order to implement MouseListener
