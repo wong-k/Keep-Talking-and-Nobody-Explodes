@@ -910,8 +910,8 @@ class Bomb extends JPanel implements MouseListener{
                     defusedCount++;
                 }
             }
-            for(Modules simon:mod){
-                if(simon.getType()==SIMON){
+            for(Modules simon:mod){                 //Since simon says needs to know the amount of strikes on the bomb
+                if(simon.getType()==SIMON){         //We update the amount of strikes everytime we update state
                     simon.updateStrikes(strikes);
                 }
             }
@@ -1176,6 +1176,10 @@ class Modules {
         }
         return defused;
     }
+    /*---------------------------------------------------------------------
+    This method is used by the Bomb class to update how many strikes are on the bomb.
+    Strikes is then passed in through simon's interract function to use the proper pattern inverter.
+     ---------------------------------------------------------------------*/
     public void updateStrikes(int strikes){
         this.strikes=strikes;
     }
