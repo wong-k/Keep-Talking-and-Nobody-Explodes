@@ -171,7 +171,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
     private AudioClip pageSound,buttonSound;       //sound effects for clicking next level, play, or return buttons
     private CustomPage custom;                     //the page where users customize their own bomb
     private boolean creatingCustom;                //indicates whether or not user is creating a custom bomb
-
+    private int nextUnlock;
     /*----------------------------------------------------------------------------------------------------------------------
      Constructor which makes the card layout, buttons, and BookPage Objects
      "displayedLevel" is an index of levelBut and pages. It controls which level page is initially shown (level 1 by default)
@@ -189,6 +189,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         levelBut=new JButton[11];
         allBombs=bombs;
         creatingCustom=false;
+        nextUnlock=0;
 
         returnBut=new JButton("Main menu");         //The location of the return and play buttons is constant for all pages, so they're created here.
         returnBut.addActionListener(this);            //On the other hand, the buttons for the levels changes location depending on the displayed panel, so they're not designated a location here
@@ -231,9 +232,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             pages[i]=newPage;
             completeBook.add(newPage,Integer.toString(i+1));         //the String assigned to each level is a number from 1 to 10
         }
-        for(BookPage page:pages){
-            page.unlock();
-        }
+        pages[0].unlock();
         custom=new CustomPage();                                        //creating the customizable page
         completeBook.add(custom,"11");
 
@@ -246,7 +245,6 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
         catch(MalformedURLException e){
             System.out.println("Can't find audio file");
         }
-        unlockLevel(0);                                    //the first level is unlocked by default
         custom.unlock();
         showPage(displayedLevel);                                   //displaying the level indicated by the parameter
         getContentPane().add(completeBook);
@@ -254,8 +252,11 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
     /*-----------------------------------------------------------------------------------------
     This method unlocks a level to play, called whenever user wins a level by defusing the bomb
      ------------------------------------------------------------------------------------------*/
-    public void unlockLevel(int pageIndex){
-        pages[pageIndex].unlock();
+    public void unlockLevel() {
+        nextUnlock++;
+        if (nextUnlock <= 9) {
+            pages[nextUnlock].unlock();
+        }
     }
     /*-----------------------------------------------------------------------------------------------------------------------------------------------
     This method shows a specific page and adds buttons to the page.
@@ -296,7 +297,7 @@ class SelectLevelPage extends JFrame implements ActionListener,MouseListener{
             GameFrame actualGame=new GameFrame(custom.getBomb(),9,this);
             actualGame.start();
         }
-        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked")){       //player has clicked play on a normal level page that's unlocked, so start the game
+        if(source==playBut && currentPage.getLockedStatus().equals("Unlocked") &&!creatingCustom){       //player has clicked play on a normal level page that's unlocked, so start the game
             buttonSound.play();
             setVisible(false);
             GameFrame actualGame = new GameFrame(currentPage.getBomb(), level, this);
@@ -735,7 +736,7 @@ class GameFrame extends JFrame implements ActionListener,MouseListener{
             bgMusic.stop();
             setVisible(false);
             if(bomb.isDefused()){                                                   //the player won the level
-                                                                                    //Since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
+                selectLevel.unlockLevel();                                                                    //Since that's the last level, Math.min is used to avoid an invalid index for pages[] in SelectLevelPage.
                 new GameOverFrame(bomb,levelIndex,selectLevel,bomb.getScore());
             }
             else{                                                                   //the player failed the level
