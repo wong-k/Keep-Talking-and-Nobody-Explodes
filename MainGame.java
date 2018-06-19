@@ -913,7 +913,7 @@ class Bomb extends JPanel implements MouseListener{
                 }
             }
             for(Modules simon:mod){                 //Since simon says needs to know the amount of strikes on the bomb
-                if(simon.getType()==SIMON){         //We update the amount of strikes everytime we update state
+                if(simon!=null && simon.getType()==SIMON){         //We update the amount of strikes everytime we update state
                     simon.updateStrikes(strikes);
                 }
             }
