@@ -152,7 +152,6 @@ public class Symbols{
                 }
             }
         }
-
         g.setColor(Color.RED);              //Colouring and drawing the defused circle in the top right
         if(defused) {
             g.setColor(Color.GREEN);
